@@ -14,7 +14,9 @@
 
   We plan to test this concept by comparing runtimes of variants of our program
   using stack and heap allocated memory in the innermost iteration steps.
-
+**Static variables and functions**.
+**Initialization of global variables**.
+**Working done in thread's local variables --> locality **.
 **Dynamic memory**.
 
 **Parsing the arguments of the program**.
@@ -36,6 +38,8 @@ subtasks. ***INSERT***
 
 **Overall layout**.
 
-**Division in subtask**. 
+**Division in subtasks**. 
+
+**Resolution of each subtask**.
 
 t summary of concepts, sketch the intended layout of your program. Here program layout refers to how you intend to split the project task in Assignment 2 into subtasks, and how that devision will be reflected in your implementation
