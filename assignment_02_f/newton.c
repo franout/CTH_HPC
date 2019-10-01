@@ -5,25 +5,29 @@
 #include <time.h>
 #include <string.h>
 #include <fcntl.h>
-
-
+#include <stddef.h>
 /*prototype of the threads*/
 static void * computation_task(void * args);
 static void * writing_task(void * args);
 
 /*static global  variables */
 static int N_THREAD,n_row_col, degree;
-volatile static int finish_computation;
-typedef struct {
-char *convergence, *attractors;
-} args_wr;
+static struct timespec sleep_timespec;
+/*mutex*/
+static pthread_mutex_t item_done_mutex;
+
+
+/*variables for data transfer*/
+int ** results;
+char * item_done;
+
 
 int main (int argc, char ** argv ) {
-args_wr args_wr_task;
+
 pthread_t *threads_computation,thread_WR;
 int i,ret;
 int option=0;
-int pipe[2]; // for communicating between computation threads and writing thread
+
 /*it returns the parsed char and as third arg it requires the separation char for arguments*/
 while ((option = getopt(argc,argv,"t:l:"))!=-1) {
 
@@ -43,36 +47,52 @@ while ((option = getopt(argc,argv,"t:l:"))!=-1) {
 	}
 }
 
+
 sscanf(argv[argc-1],"%d",&degree);
-finish_computation=1;
+sleep_timespec.tv_nsec=100000;
+
 threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
 if(threads_computation==NULL){
 fprintf(stderr,"error allocating threads' array\n");
 exit(-1);
 }
 
+results=(int **) malloc(sizeof(int *) * n_row_col);
+if(results==NULL) {
+fprintf(stderr,"error allocating global variable for data transfer\n");
+exit(-1);
+
+}
+item_done=(char *) malloc(sizeof(char)*n_row_col);
+if(item_done==NULL) {
+fprintf(stderr,"error  allocating global variable for data transfer\n");
+exit(-1);
+}
+// initializing to all zero  item done and to null the pointer of results
+for(i=0;i<n_row_col;i++){
+item_done[0]=0;
+results[i]=NULL;
+}
+
 
 /*creating computation thread*/
 for ( i =0;i< N_THREAD;i++) {
-	
- if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (int * )0 ))) {
+size_t *args = malloc(sizeof(size_t));
+if (args==NULL){
+fprintf(stderr,"error allocating arguments for computation threads\n");
+exit(-1);
+}
+*args=i;
+ if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (void * )args ))) {
 	     fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
 	         exit(1);
 		   }
 }
-args_wr_task.convergence=(char *) malloc ( sizeof(char) *30 );
-args_wr_task.attractors= (char * ) malloc (sizeof(char) *30);
-
-if(args_wr_task.convergence == NULL || args_wr_task.attractors==NULL) {
-fprintf(stderr,"error allocating string's path of fd\n");
-exit(-1);
-}
 
 
-sprintf(args_wr_task.convergence, "./newton_convergence_x%d.ppm",degree);
-sprintf(args_wr_task.attractors, "./newton_attractors_x%d.ppm",degree);
+
 /*creating writing thread*/
- if ((ret = pthread_create(&thread_WR, NULL, writing_task, (void*)(&args_wr_task)))) {
+ if ((ret = pthread_create(&thread_WR, NULL, writing_task,(void *)0 ))) {
 	     fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
 	         exit(1);
 		   }
@@ -93,9 +113,13 @@ if ((ret = pthread_join(thread_WR, NULL))) {
      		          exit(1);
 			    }
 
+
+free(results);
+free(item_done);
 free(threads_computation);
-free ( args_wr_task.convergence);
-free(args_wr_task.attractors);
+
+
+
 
 
 return 0;
@@ -104,82 +128,52 @@ return 0;
 
 
 static void * writing_task ( void * args ) {
-
-FILE * att, * conv;
-args_wr * p_args;
-char * work_string;
-p_args= args;
+  char * item_done_loc = (char*)calloc(n_row_col, sizeof(char));
 
 
-if((att=fopen(p_args->attractors,"w"))){
-fprintf(stderr,"erorr opening file attractors\n");
-exit(-1);
-}
-if((conv=fopen(p_args->convergence,"w"))){
-fprintf(stderr,"erorr opening file attractors\n");
-exit(-1);
-}
-work_string= (char *) malloc ( sizeof(char )*128);
-if(work_string==NULL){
-fprintf(stderr,"error allocating string\n");
-exit(-1);
+  for ( size_t ix = 0; ix < n_row_col; ) {
+	    pthread_mutex_lock(&item_done_mutex);
+	      if ( item_done[ix] != 0 )
+		          memcpy(item_done_loc, item_done, n_row_col*sizeof(char));
+	        pthread_mutex_unlock(&item_done_mutex);
 
-}
-sprintf(work_string,"P3\n%d %d\n255\n",n_row_col,n_row_col);
-fwrite(work_string, sizeof(char), strlen(work_string) ,att);
-fwrite(work_string,sizeof(char),strlen(work_string),conv);
+		  if ( item_done_loc[ix] == 0 ) {
+			     nanosleep(&sleep_timespec, NULL);
+			          continue;
+				    }
+		int * result = (int * ) malloc ( sizeof(int) * n_row_col);
+		    for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
+			       if(results[ix]!=NULL){
+			   	 result = results[ix];
+				} else {
+				fprintf(stderr,"something went wrong with the assignment of results \n");
+				exit(-1);
+				}
+				    //TODO: write result
+				   fprintf(stdout,"%d",ix); 
+				        free(result);
+				          }
+				          }
 
-
-while(finish_computation){
-
-	
-/*reading from the pipe*/		
-if(read()){
-fprintf(stderr,"error reading from the pipe\n");
-exit(-2);
-}	
-
-
-fwrite(work_string,sizeof(char),strlen(work_string),conv);
-fwrite(work_string,sizeof(char),strlen(work_string),conv);
-}
-
-
-fclose(att);
-fclose(conv);
-if(att==NULL || conv==NULL){
-fprintf(stderr,"error closing files \n");
-exit(-1);}
-
-free(work_string);
-
+  free(item_done_loc);
 return NULL;
 }
 
 
 static void * computation_task(void * args ) {
-for ( conv = 0, attr = DEFAULT_VALUE; ; ++conv ) {
-  if ( CHECK CONDITION ) {
-      attr = VALUE;
-          break;
-            }
-              if ( CHECK CONDITION ) {
-                  attr = VALUE;
-       	       break;
-       	         }
-       		   for ( EXPRESSION )
-       		       if ( CHECK CONDITION ) {
-       		             attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
-       			           break;
-   }
-     if ( attr != DEFAULT_VALUE )
-         break;
-
-           // computation
-     }
-       						       
+	size_t offset=*((size_t *)args);
+	free(args);
 
 
-	finish_computation=0;
+	  for (size_t ix = offset; ix < n_row_col; ix += N_THREAD ) {
+		    int * result = (int*)malloc(sizeof(int)*n_row_col);
+		      //TODO :compute work item checking correctness
+		        results[ix] = result;
+		       nanosleep(&sleep_timespec, NULL);
+		          pthread_mutex_lock(&item_done_mutex);
+		            item_done[ix] = 1;
+		              pthread_mutex_unlock(&item_done_mutex);
+		              }
+
 	return NULL;
 }
