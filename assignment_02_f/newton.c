@@ -18,8 +18,8 @@ static pthread_mutex_t item_done_mutex;
 
 
 /*variables for data transfer*/
-int ** results;
-char * item_done;
+static int ** results;
+static char * item_done;
 
 
 int main (int argc, char ** argv ) {
