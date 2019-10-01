@@ -15,7 +15,9 @@
   We plan to test this concept by comparing runtimes of variants of our program
   using stack and heap allocated memory in the innermost iteration steps.
 
-***CONTINUE HERE WITH FUTHER CONCEPTS***
+**Dynamic memory**.
+
+**Parsing the arguments of the program**.
 
 ## Intended program layout
 
@@ -32,3 +34,8 @@ subtasks. ***INSERT***
 
 ***CONTINUE BY FURTHER SPLITTING UP THE TWO TASKS***
 
+**Overall layout**.
+
+**Division in subtask**. 
+
+t summary of concepts, sketch the intended layout of your program. Here program layout refers to how you intend to split the project task in Assignment 2 into subtasks, and how that devision will be reflected in your implementation
