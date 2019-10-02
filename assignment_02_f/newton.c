@@ -220,15 +220,62 @@ return NULL;
 static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
+	double x=0; //	TODO ASK FOR THE INITIAL VALUE
 
-	  for (size_t ix = offset; ix < n_row_col; ix += N_THREAD ) {
-		         //TODO :compute work item checking correctness
-		double * attractor=(double *) malloc(sizeof(double ) *n_row_col);
+/*It remains to implement the computation in order to complete the program.
+ *  Since you can use functionality from complex.h and you can hardcode your formula, 
+ *  this step is largely about finding an expression for the iteration step that is as efficient as possible. 
+ *  Once more, recall that using cpow is not an option.
+ *
+ *     Inserting the Newton iteration step naively, you obtain x - (x^d - 1)/(d*x^(d-1)). How can you simplify it.
+ *
+ *     When hardcoding the expression that you derive from this, the following syntax is convenient:
+ */
+
+
+  for (size_t ix = offset; ix < n_row_col; ix += N_THREAD ) {
+     		double * attractor=(double *) malloc(sizeof(double ) *n_row_col);
 		double * convergence=(double *) malloc(sizeof(double ) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 		fprintf(stderr,"error allocating rows in the computation thread\n");
 		exit(-1);	
-		}
+		} 
+    //TODO :compute work item  and checking correctness
+/*for ( conv = 0, attr = DEFAULT_VALUE; ; ++conv ) {
+	  if ( CHECK CONDITION ) {
+		      attr = VALUE;
+		          break;
+			    }
+	    if ( CHECK CONDITION ) {
+		        attr = VALUE;
+			    break;
+			      }
+	      for ( EXPRESSION )
+		          if ( CHECK CONDITION ) {
+				        attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
+					      break;
+					          }
+	        if ( attr != DEFAULT_VALUE )
+			    break;
+	
+		  int y=x; // getting the current x
+			for(int j=1;j<=degree;j++) {
+			y*=x;			
+			}
+		
+			int z=x;
+			for(int j=1;j<degree;j++){
+			z*x;			
+			}
+			z*=++j; // multipling by d
+			// y has x_k^d z has x_k^(d-1)*d
+		
+
+
+
+			x=x - y/z; // should we avoid aliasing?
+
+		   }*/
 		for ( size_t cx = 0; cx < n_row_col; ++cx ) {
 			  attractor[cx] = 0;
 			    convergence[cx] = 0;
