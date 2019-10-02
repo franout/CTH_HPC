@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <pthread.h>
+#include <unistd.h>
 #include <time.h>
 #include <string.h>
-#include <fcntl.h>
-#include <stddef.h>
+/*Implement in C using POSIX threads a program called newton that computes similar pictures
+ *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
+*/ 
+
 /*prototype of the threads*/
 static void * computation_task(void * args);
 static void * writing_task(void * args);
@@ -18,13 +20,20 @@ static pthread_mutex_t item_done_mutex;
 
 
 /*variables for data transfer*/
-static int ** results;
 static char * item_done;
+static double  ** attractors;
+static double ** convergences;
+/*struct for passing argument to write threa*/
 
+typedef struct {
+char *attractors_file, *convergences_file;
+}write_args;
 
 int main (int argc, char ** argv ) {
 
+
 pthread_t *threads_computation,thread_WR;
+write_args write_t_args ;
 int i,ret;
 int option=0;
 
@@ -50,19 +59,22 @@ while ((option = getopt(argc,argv,"t:l:"))!=-1) {
 
 sscanf(argv[argc-1],"%d",&degree);
 sleep_timespec.tv_nsec=100000;
-
 threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
 if(threads_computation==NULL){
 fprintf(stderr,"error allocating threads' array\n");
 exit(-1);
 }
-
-results=(int **) malloc(sizeof(int *) * n_row_col);
-if(results==NULL) {
-fprintf(stderr,"error allocating global variable for data transfer\n");
+attractors=(double **) malloc(sizeof(double *)*n_row_col);
+if(attractors==NULL){
+fprintf(stderr,"error allocating attractor vector pointer\n");
 exit(-1);
-
 }
+convergences=(double**)malloc(sizeof(double *)*n_row_col);
+if(convergences==NULL){
+fprintf(stderr,"error allocating convergence vector pointer\n");
+exit(-1);
+}
+
 item_done=(char *) malloc(sizeof(char)*n_row_col);
 if(item_done==NULL) {
 fprintf(stderr,"error  allocating global variable for data transfer\n");
@@ -71,7 +83,6 @@ exit(-1);
 // initializing to all zero  item done and to null the pointer of results
 for(i=0;i<n_row_col;i++){
 item_done[0]=0;
-results[i]=NULL;
 }
 
 
@@ -89,10 +100,17 @@ exit(-1);
 		   }
 }
 
-
+write_t_args.attractors_file=(char *) malloc ( sizeof(char) *30);
+ write_t_args.convergences_file=(char *) malloc(sizeof(char)*30);
+if(write_t_args.convergences_file==NULL || write_t_args.attractors_file==NULL){
+fprintf(stderr,"error allocating string for file name \n");
+exit(-1);
+}
+sprintf(write_t_args.convergences_file,"newton_convergence_x%d.ppm",degree);
+sprintf(write_t_args.attractors_file,"newton_attractors_x%d.ppm",degree);
 
 /*creating writing thread*/
- if ((ret = pthread_create(&thread_WR, NULL, writing_task,(void *)0 ))) {
+ if ((ret = pthread_create(&thread_WR, NULL, writing_task,(void *)(&write_t_args) ))) {
 	     fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
 	         exit(1);
 		   }
@@ -114,24 +132,51 @@ if ((ret = pthread_join(thread_WR, NULL))) {
 			    }
 
 
-free(results);
 free(item_done);
 free(threads_computation);
-
-
-
-
-
+free(convergences);
+free(attractors);
 return 0;
 }
 
 
 
 static void * writing_task ( void * args ) {
-  char * item_done_loc = (char*)calloc(n_row_col, sizeof(char));
+ 	 char * item_done_loc = (char*)calloc(n_row_col, sizeof(char));
+	  char*work_string;
+
+	/*they are just poitners to the row which have to write*/
+	double * result_c ;
+	double * result_a;
 
 
-  for ( size_t ix = 0; ix < n_row_col; ) {
+	FILE * fp_attr,*fp_conv;
+	write_args * files_local=(write_args *) args;
+	fp_attr= fopen(files_local->attractors_file,"w");
+	if(fp_attr==NULL){
+	fprintf(stderr,"errror opening attractors file\n");
+	exit(-1);
+	}
+	fp_conv=fopen(files_local->convergences_file,"w");
+	if(fp_conv==NULL){
+	fprintf(stderr,"error opening convergences file\n");
+	exit(-1);
+	}
+
+	free(files_local->convergences_file);
+	free(files_local->attractors_file);
+
+work_string=(char *) malloc ( sizeof(char)* 30000);
+if(work_string==NULL){
+fprintf(stderr,"error allocating working string\n");
+exit(-1);
+}
+sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,255);
+fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);
+sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,2);
+fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
+
+	for ( size_t ix = 0; ix < n_row_col; ) {
 	    pthread_mutex_lock(&item_done_mutex);
 	      if ( item_done[ix] != 0 )
 		          memcpy(item_done_loc, item_done, n_row_col*sizeof(char));
@@ -141,21 +186,33 @@ static void * writing_task ( void * args ) {
 			     nanosleep(&sleep_timespec, NULL);
 			          continue;
 				    }
-		int * result = (int * ) malloc ( sizeof(int) * n_row_col);
 		    for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
-			       if(results[ix]!=NULL){
-			   	 result = results[ix];
-				} else {
-				fprintf(stderr,"something went wrong with the assignment of results \n");
-				exit(-1);
-				}
-				    //TODO: write result
-				   fprintf(stdout,"%d",ix); 
-				        free(result);
-				          }
+				result_c=convergences[ix];
+				result_a=attractors[ix];
+				//conversion loop				
+				for (int i=0; i<n_row_col;i++) {
+				sprintf(work_string,"%f ",result_a[i]);
+					fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
+				sprintf(work_string,"%f ",result_c[i]);
+				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
+				}				
+				
+					//TODO	implement the writing stage of computed results in a clever wat
+		
+				 				          }
 				          }
 
+
   free(item_done_loc);
+  free(work_string);
+  fclose(fp_attr);
+  fclose(fp_conv);
+  if(fp_attr==NULL || fp_conv==NULL){
+  fprintf(stderr,"errror closing output files\n");
+  exit(-1);
+  }
+
+
 return NULL;
 }
 
@@ -164,13 +221,23 @@ static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
 
-
 	  for (size_t ix = offset; ix < n_row_col; ix += N_THREAD ) {
-		    int * result = (int*)malloc(sizeof(int)*n_row_col);
-		      //TODO :compute work item checking correctness
-		        results[ix] = result;
-		       nanosleep(&sleep_timespec, NULL);
-		          pthread_mutex_lock(&item_done_mutex);
+		         //TODO :compute work item checking correctness
+		double * attractor=(double *) malloc(sizeof(double ) *n_row_col);
+		double * convergence=(double *) malloc(sizeof(double ) *n_row_col);
+		if( attractor==NULL || convergence==NULL) {
+		fprintf(stderr,"error allocating rows in the computation thread\n");
+		exit(-1);	
+		}
+		for ( size_t cx = 0; cx < n_row_col; ++cx ) {
+			  attractor[cx] = 0;
+			    convergence[cx] = 0;
+		}
+	       	       nanosleep(&sleep_timespec, NULL);
+			   	 pthread_mutex_lock(&item_done_mutex);
+				  attractors[ix]=attractor;
+			       convergences[ix]=convergence;
+
 		            item_done[ix] = 1;
 		              pthread_mutex_unlock(&item_done_mutex);
 		              }
