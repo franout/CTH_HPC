@@ -1,7 +1,7 @@
 CC= gcc
 CFLAGS= -Wall -o
 OPT= -O0
-LIBS= -pthread
+LIBS= -pthread -lcomplex
 
 .PHONY: all
 compile:

@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <complex.h>
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
  *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
 */ 
@@ -21,8 +22,8 @@ static pthread_mutex_t item_done_mutex;
 
 /*variables for data transfer*/
 static char * item_done;
-static double  ** attractors;
-static double ** convergences;
+static double complex ** attractors;
+static double complex ** convergences;
 /*struct for passing argument to write threa*/
 
 typedef struct {
@@ -64,12 +65,12 @@ if(threads_computation==NULL){
 fprintf(stderr,"error allocating threads' array\n");
 exit(-1);
 }
-attractors=(double **) malloc(sizeof(double *)*n_row_col);
+attractors=(double complex **) malloc(sizeof(double complex *)*n_row_col);
 if(attractors==NULL){
 fprintf(stderr,"error allocating attractor vector pointer\n");
 exit(-1);
 }
-convergences=(double**)malloc(sizeof(double *)*n_row_col);
+convergences=(double complex**)malloc(sizeof(double complex *)*n_row_col);
 if(convergences==NULL){
 fprintf(stderr,"error allocating convergence vector pointer\n");
 exit(-1);
@@ -146,8 +147,8 @@ static void * writing_task ( void * args ) {
 	  char*work_string;
 
 	/*they are just poitners to the row which have to write*/
-	double * result_c ;
-	double * result_a;
+	double complex* result_c ;
+	double complex* result_a;
 
 
 	FILE * fp_attr,*fp_conv;
@@ -220,28 +221,17 @@ return NULL;
 static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
-	double x=0; //	TODO ASK FOR THE INITIAL VALUE
+	double complex x= 4/n_row_col; // random starting point
 
-/*It remains to implement the computation in order to complete the program.
- *  Since you can use functionality from complex.h and you can hardcode your formula, 
- *  this step is largely about finding an expression for the iteration step that is as efficient as possible. 
- *  Once more, recall that using cpow is not an option.
- *
- *     Inserting the Newton iteration step naively, you obtain x - (x^d - 1)/(d*x^(d-1)). How can you simplify it.
- *
- *     When hardcoding the expression that you derive from this, the following syntax is convenient:
- */
-
-
-  for (size_t ix = offset; ix < n_row_col; ix += N_THREAD ) {
-     		double * attractor=(double *) malloc(sizeof(double ) *n_row_col);
-		double * convergence=(double *) malloc(sizeof(double ) *n_row_col);
+  for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
+     		char * attractor=(char *) malloc(sizeof(char) *n_row_col);//TODO
+		double  complex * convergence=(double complex*) malloc(sizeof(double complex) *n_row_col);// TODO
 		if( attractor==NULL || convergence==NULL) {
 		fprintf(stderr,"error allocating rows in the computation thread\n");
 		exit(-1);	
 		} 
     //TODO :compute work item  and checking correctness
-/*for ( conv = 0, attr = DEFAULT_VALUE; ; ++conv ) {
+	for ( conv = 0, attr = DEFAULT_VALUE; ; ++conv ) {
 	  if ( CHECK CONDITION ) {
 		      attr = VALUE;
 		          break;
@@ -250,44 +240,37 @@ static void * computation_task(void * args ) {
 		        attr = VALUE;
 			    break;
 			      }
-	      for ( EXPRESSION )
+	      for ( EXPRESSION ){
 		          if ( CHECK CONDITION ) {
 				        attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
 					      break;
-					          }
-	        if ( attr != DEFAULT_VALUE )
+					          }	}
+	        if ( attr != DEFAULT_VALUE ){
 			    break;
-	
-		  int y=x; // getting the current x
-			for(int j=1;j<=degree;j++) {
-			y*=x;			
-			}
-		
-			int z=x;
-			for(int j=1;j<degree;j++){
-			z*x;			
-			}
-			z*=++j; // multipling by d
-			// y has x_k^d z has x_k^(d-1)*d
-		
-
-
-
-			x=x - y/z; // should we avoid aliasing?
-
-		   }*/
-		for ( size_t cx = 0; cx < n_row_col; ++cx ) {
-			  attractor[cx] = 0;
-			    convergence[cx] = 0;
 		}
-	       	       nanosleep(&sleep_timespec, NULL);
-			   	 pthread_mutex_lock(&item_done_mutex);
-				  attractors[ix]=attractor;
-			       convergences[ix]=convergence;
-
-		            item_done[ix] = 1;
-		              pthread_mutex_unlock(&item_done_mutex);
+	
+		  double complex y=x; // getting the current x
+		  double complex z=x;
+			for(int j=1;j<degree;j++) {
+			y=cmul(x,y);	
+			z=cmul(x,z);
+			}
+			y=cmul(y,x);
+			y--;	
+			z=cmul(++j,z); // multipling by d
+			// y has x_k^d z has x_k^(d-1)*d
+			x=x - cdiv(y,z); // should we avoid aliasing?
+			// attractors are the imaginary part of the complex number
+				
 		              }
 
+			nanosleep(&sleep_timespec, NULL);
+		   	 pthread_mutex_lock(&item_done_mutex);
+			  attractors[ix]=attractor;
+		       convergences[ix]=convergence;
+		           item_done[ix] = 1;
+		             pthread_mutex_unlock(&item_done_mutex);  
+  
+  }
 	return NULL;
 }
