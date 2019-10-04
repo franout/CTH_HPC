@@ -35,9 +35,9 @@
 
 **Locality**
   According to wikipedia locality is defined as:
-  	    "the tendency of a processor to access the 
-	      same set of memory locations reptitively over a short period of time"
-	      	       	  	 	   	       	      -[wikipedia:Locality of reference]
+  >the tendency of a processor to access the same set of memory locations reptitively over
+  > a short period of time
+  >*-[wikipedia:Locality of reference]*
 							      
   Exploiting this principle we can use this to access arrays in a faster way, increasing performance.
   Most arrays can be put within one cache line. Caching reduces direct access to memory and keeps
@@ -62,17 +62,11 @@
   -Synchronization
   -Transfering Data
 
-**Load Balancing**
-
-
-
-**Initialization of global variables**. -- don't really know what to say here?
-
 **Working done in thread's local variables**
 
-**Bottlenecks**
+**Load Balancing**
 
-**Parsing the arguments of the program**.
+**Possible Bottlenecks?**
 
 ## Intended program layout
 **Overall layout**
@@ -89,7 +83,7 @@
        //future idea: make each thread able to create it's one sub threads
 
 
-     *Writing threads:
+    **Writing threads:
        - writing to file is mostlikly slower than computation, splitting is better
        - only one thread per file for writing, otherwise synchronisation problem
        - maybe a thread for converting numbers to string? --> so far only one thread per file doing both
