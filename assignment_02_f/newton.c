@@ -22,8 +22,8 @@ static pthread_mutex_t item_done_mutex;
 
 /*variables for data transfer*/
 static char * item_done;
-static double complex ** attractors;
-static double complex ** convergences;
+static uint8_t ** attractors; // roots in which the function is evolving
+static uint8_t ** convergences; // # of iterations needed for the convergence to a root
 /*struct for passing argument to write threa*/
 
 typedef struct {
@@ -147,8 +147,8 @@ static void * writing_task ( void * args ) {
 	  char*work_string;
 
 	/*they are just poitners to the row which have to write*/
-	double complex* result_c ;
-	double complex* result_a;
+	uint8_t* result_c ;
+	uint8_t* result_a;
 
 
 	FILE * fp_attr,*fp_conv;
@@ -166,17 +166,16 @@ static void * writing_task ( void * args ) {
 
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
-
-work_string=(char *) malloc ( sizeof(char)* 30000);
+	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
+work_string=(char *) malloc ( sizeof(char)* 30);
 if(work_string==NULL){
 fprintf(stderr,"error allocating working string\n");
 exit(-1);
 }
-sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,255);
+sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,degree+2);
 fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);
 sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,2);
 fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
-
 	for ( size_t ix = 0; ix < n_row_col; ) {
 	    pthread_mutex_lock(&item_done_mutex);
 	      if ( item_done[ix] != 0 )
@@ -190,22 +189,18 @@ fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 		    for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 				result_c=convergences[ix];
 				result_a=attractors[ix];
-				//conversion loop				
-				for (int i=0; i<n_row_col;i++) {
-				sprintf(work_string,"%f ",result_a[i]);
-					fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
-				sprintf(work_string,"%f ",result_c[i]);
+				for(i=0;i<n_row_col;i++) {
+				sprintf(work_string,"%d ",result_a[i]);
+				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
+				sprintf(work_string,"%d ",result_c[i]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
-				}				
-				
-					//TODO	implement the writing stage of computed results in a clever wat
-		
+								
+				}
+						
 				 				          }
 				          }
-
-
-  free(item_done_loc);
   free(work_string);
+  free(item_done_loc);
   fclose(fp_attr);
   fclose(fp_conv);
   if(fp_attr==NULL || fp_conv==NULL){
@@ -221,17 +216,23 @@ return NULL;
 static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
-	double complex x= 4/n_row_col; // random starting point
-
+	double complex x,y,z;
+	double complex attr;
+	int conv; //CHECK TODO
   for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
-     		char * attractor=(char *) malloc(sizeof(char) *n_row_col);//TODO
-		double  complex * convergence=(double complex*) malloc(sizeof(double complex) *n_row_col);// TODO
+     		uint8_t * attractor=(uint8_t *) malloc(sizeof(uint8_t) *n_row_col);
+		uint8_t  complex * convergence=(uint8_t*) malloc(sizeof(uint8_t) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 		fprintf(stderr,"error allocating rows in the computation thread\n");
 		exit(-1);	
-		} 
+		}
+	//TODO choose a starting point 
+
+	// for the column along x axes
+	for(size_t jx=0 ; ; jx++ ){
+
     //TODO :compute work item  and checking correctness
-	for ( conv = 0, attr = DEFAULT_VALUE; ; ++conv ) {
+	for ( conv = 0, attr =1; ; ++conv ) {
 	  if ( CHECK CONDITION ) {
 		      attr = VALUE;
 		          break;
@@ -248,9 +249,9 @@ static void * computation_task(void * args ) {
 	        if ( attr != DEFAULT_VALUE ){
 			    break;
 		}
-	
-		  double complex y=x; // getting the current x
-		  double complex z=x;
+		// computing x_k+1
+		   y=x; // getting the current x
+		   z=x;
 			for(int j=1;j<degree;j++) {
 			y=cmul(x,y);	
 			z=cmul(x,z);
@@ -259,18 +260,20 @@ static void * computation_task(void * args ) {
 			y--;	
 			z=cmul(++j,z); // multipling by d
 			// y has x_k^d z has x_k^(d-1)*d
-			x=x - cdiv(y,z); // should we avoid aliasing?
+			x=x - cdiv(y,z); 
 			// attractors are the imaginary part of the complex number
 				
-		              }
-
+		              }//TODO
+			attractor[jx]=attr; // maping function for color
+			convergence[jx]=conv; // mapping function for tocolo
+		}
 			nanosleep(&sleep_timespec, NULL);
 		   	 pthread_mutex_lock(&item_done_mutex);
 			  attractors[ix]=attractor;
 		       convergences[ix]=convergence;
 		           item_done[ix] = 1;
 		             pthread_mutex_unlock(&item_done_mutex);  
-  
+	
   }
 	return NULL;
 }
