@@ -1,6 +1,6 @@
 ## Relevant concepts
 
-- **Stack allocation**.  We have learned in Assignment 0 that there are two
+**Stack allocation**.  We have learned in Assignment 0 that there are two
   types of allocated memory: Stack and heap allocated memory. One acquires
   stack allocated memory by using array declarations inside of functions, as
   opposed to global declarations of arrays.
@@ -14,14 +14,63 @@
 
   We plan to test this concept by comparing runtimes of variants of our program
   using stack and heap allocated memory in the innermost iteration steps.
+
+**Dynamic memory and memory fragmentation**
+  Fragmentation can occur when we allocate dynamic memory in noncontiguous blocks.
+  The memory "between" the blocks is unallocated and can be too small to be usable.
+  These gaps summarize leaving substantial amounts of memory wasted. In addition to
+  that the noncontiguous allocated memory can slow down memory access.
+  When dynamically allocating memory it is imperative to free the memory, once
+  the process is finished, in order to avoid wasting memory space (memory leakage). 
   
-**Static variables and functions**.
+**Reading and writing files**
+  Files can be read with fread() and written with fwrite(). These functions are
+  less complex than fscanf() or fprint() and therefore faster. fwrite() and fread()
+  are using buffer to write or read. This results in faster computation.
+  
+**Command line arguments**
+  It is possible to pass arguments to a program via command line. If intended, these
+  additional inputs allow the user to change parameters or program behaviour.
+  POSIX library contains an easy way to implement the parsing of command line arguments.
 
-**Initialization of global variables**.
+**Locality**
+  According to wikipedia locality is defined as:
+  	    "the tendency of a processor to access the 
+	      same set of memory locations reptitively over a short period of time"
+	      	       	  	 	   	       	      -[wikipedia:Locality of reference]
+							      
+  Exploiting this principle we can use this to access arrays in a faster way, increasing performance.
+  Most arrays can be put within one cache line. Caching reduces direct access to memory and keeps
+  part of the data in one quickly accessible location.
+  It is important to remember, that accessing data from different parts of the memory
+  will always take more time than accessing data from cache.
 
-**Working done in thread's local variables --> locality **.
+  In the assignments we looked at techniques like loop unrolling to optimize performance. 
 
-**Dynamic memory**
+**Alignment and Padding**
+  Different types of variables require different amounts of memory. Variables should be declared
+  in groups sorted by type. This way the compiler can allocate memory more efficient. This avoids
+  waste of memory space.
+
+**HDD vs SSD**
+  While a single SSD is generally faster than an HDD gantenbein uses one SSD and a HDD-raid.
+  As seen in the tests of Assignment 1, this raid increases performance of the HDDs leading
+  to a similar performace as the SSD. Therefore the operation for writing files should not have
+  a big overhead.
+
+**Threads and Mutexes**
+  -Synchronization
+  -Transfering Data
+
+**Load Balancing**
+
+
+
+**Initialization of global variables**. -- don't really know what to say here?
+
+**Working done in thread's local variables**
+
+**Bottlenecks**
 
 **Parsing the arguments of the program**.
 
