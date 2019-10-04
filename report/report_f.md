@@ -62,17 +62,11 @@
   -Synchronization
   -Transfering Data
 
-**Load Balancing**
-
-
-
-**Initialization of global variables**. -- don't really know what to say here?
-
 **Working done in thread's local variables**
 
-**Bottlenecks**
+**Load Balancing**
 
-**Parsing the arguments of the program**.
+**Possible Bottlenecks?**
 
 ## Intended program layout
 **Overall layout**
