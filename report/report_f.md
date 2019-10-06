@@ -59,24 +59,67 @@
   a big overhead.
 
 **Threads and Mutexes**
-  -Synchronization
-  -Transfering Data
+	>A thread of execution is the smallest sequence of programmed instructions in order to achieve the parallelism.
+	> +[wikipedia: Thread (Computer science)]
+  In principle, the threads can be executed in parallel, by different processors. To avoid conflic on shared variables
+ they have to be synchronized, a naive method is the use of mutexes. 
 
-**Working done in thread's local variables**
+  Mutexes will allow global variables (used for data tranferring) to be accessed by one single thread at a time.
+  In order to assure deterministic behaviour it is imperative that the variable is accessed by no more than one thread at a time.
 
 **Load Balancing**
+ Some problems can be split up into independent subproblems. These problems will be distributed among several threads, 
+ simplifying the work done by a single thread.
 
-**Possible Bottlenecks?**
+**Possible Bottlenecks**
+ Even with fast processors the performance is bound by other factors, some of them are disk access, data trasfer done in memory,
+ the cache misses, TLB misses, branch prediction misses.
+ These bottlenecks have to be kept in mind while assesing to the benchmarks.  
 
 ## Intended program layout
 **Overall layout**
--Goal : compute newton iteration of complex numbers and put it in a nice picture
--Main thread:
+The main goal of the assignment is to compute newton iteration according to the problem's defintion on the course website.
+The output file format is PPM, which will reppresent the root's convergence of the function.
+
+
+All the work is splitted up among different threads, in particular:
+
+	*Master thread: it is in charge of creating and managing the working threads and the necessary data structure.
+	*Working threads: they are in charge of resolving the given problem.
+
+**Division in subtasks**
+	*Thread management
+	 - create threads 
+   	 - give tasks to threads
+	 - wait for threads 
+     	 - prepare all the data structures for threads
+	
+	*Computation:
+		*calculate roots
+		*splits into subproblems ( it is a possible improvement if the computation is too slow ) 
+		*write to global variables
+		*check conditions about convergency
+		*compute the next value of x
+
+	*Writing:
+		*assign colours to roots 
+		*open files
+		*write files
+		*create result pictures 
+
+
+
+**Resolution of each subtask**.
+
+
+Main thread:
+  -Main thread:
       - will create other threads
       - allocates data and manages tasks
       - has exit condition? --> has to wait for other threads
       - will neither do computation nor write to file
--Sub threads:
+
+ 
      *Computation threads:
        - assign a range of values, where it will compute the iteration
        	!? how do we allocate the memory? (noncontiguous? --> slides from 02/10/19)
@@ -89,17 +132,4 @@
        - maybe a thread for converting numbers to string? --> so far only one thread per file doing both
               ? is converting within one thread faster than converting in another thread and then giving
 	      it to a write thread?
-       //outlook -> trying to split the writing so we can use multiple threads
-
-**Division in subtasks**
--Main thread:
-      - create threads and threadpool
-      - give tasks to threads
-      - wait for threads to finish
-      - shutdown threads once program is done
-      ?* benchmark individual tasks --> look into POSIX for function to measure the time
-      ? look up thread diagram about how threads are dependent on each other
-
-
-**Resolution of each subtask**.
-t summary of concepts, sketch the intended layout of your program. Here program layout refers to how you intend to split the project task in Assignment 2 into subtasks, and how that devision will be reflected in your implementation
+       //outlook -> trying to split the 
