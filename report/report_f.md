@@ -59,9 +59,11 @@
   a big overhead.
 
 **Threads and Mutexes**
-	>A thread of execution is the smallest sequence of programmed instructions in order to achieve the parallelism.
-	> +[wikipedia: Thread (Computer science)]
-  In principle, the threads can be executed in parallel, by different processors. To avoid conflic on shared variables
+
+> A thread of execution is the smallest sequence of programmed instructions in order to achieve the parallelism.
+> *-[wikipedia: Thread (Computer science)]*
+ 
+ In principle, the threads can be executed in parallel, by different processors. To avoid conflic on shared variables
  they have to be synchronized, a naive method is the use of mutexes. 
 
   Mutexes will allow global variables (used for data tranferring) to be accessed by one single thread at a time.
@@ -84,30 +86,28 @@ The output file format is PPM, which will reppresent the root's convergence of t
 
 All the work is splitted up among different threads, in particular:
 
-	*Master thread: it is in charge of creating and managing the working threads and the necessary data structure.
-	*Working threads: they are in charge of resolving the given problem.
+* Master thread: it is in charge of creating and managing the working threads and the necessary data structure.
+
+* Working threads: they are in charge of resolving the given problem.
 
 **Division in subtasks**
-	*Thread management
-	 - create threads 
+* Thread management
+	- create threads
    	 - give tasks to threads
-	 - wait for threads 
-     	 - prepare all the data structures for threads
-	
-	*Computation:
-		*calculate roots
-		*splits into subproblems ( it is a possible improvement if the computation is too slow ) 
-		*write to global variables
-		*check conditions about convergency
-		*compute the next value of x
-
-	*Writing:
-		*assign colours to roots 
-		*open files
-		*write files
-		*create result pictures 
-
-
+	 - wait for threads
+	 - prepare all the data structures for threads
+* Computation
+	+ calculate roots
+	+ splits into subproblems ( it is a possible improvement if the computation is too slow )
+	+ write to global variables ( data transfer)
+	+ check conditions about convergency
+	+ compute the next value of x
+		
+* Writing
+	+ assign colours to roots
+	+ open files
+	+ write files
+	+ create result pictures 
 
 **Resolution of each subtask**.
 
