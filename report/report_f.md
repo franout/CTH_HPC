@@ -111,25 +111,20 @@ All the work is splitted up among different threads, in particular:
 
 **Resolution of each subtask**.
 
+*Thread management*
+The Master thread is in charge of the thread management, it will parse the argument given to the program from the command line and handle properly the behaviour of the program accordingly,i.e. creating the required number of computation threads, the degree of the function and the required rows and colums of the output picture.
+It will also wait the computation threads to finish and as last step, a wait for the writing thread which may be slower than the computation threads since it has to deal with writing operation on the HDD.
 
-Main thread:
-  -Main thread:
-      - will create other threads
-      - allocates data and manages tasks
-      - has exit condition? --> has to wait for other threads
-      - will neither do computation nor write to file
-
+*Computation*
+Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
  
-     *Computation threads:
-       - assign a range of values, where it will compute the iteration
-       	!? how do we allocate the memory? (noncontiguous? --> slides from 02/10/19)
-       //future idea: make each thread able to create it's one sub threads
+A clever implementation could be that each computation thread, understands its own slowness, is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
 
 
-    **Writing threads:
-       - writing to file is mostlikly slower than computation, splitting is better
-       - only one thread per file for writing, otherwise synchronisation problem
-       - maybe a thread for converting numbers to string? --> so far only one thread per file doing both
-              ? is converting within one thread faster than converting in another thread and then giving
-	      it to a write thread?
-       //outlook -> trying to split the 
+*Writing*
+It will open the files accordingly to their names (depending on the grade) and it will use a busy form of waiting for the data for writing them in the proper order.
+Once it will understand, reading the proper global variable, that a given row has been computed and it is ready for be written to the file, it will convert the row to a string, mapping properly each value to a colour, through the modulo operations, since the maximum number of colours is degree +2  ( taking into account also the extreme cases 0 and infity ).
+  
+Another implementation could be to create a writing thread for each file since thei data are independent from each others.
+
+There could be also the possibility to create a thread which is in charge of only map the data to a colour, in this case the thread is also in charge of setting  properly the global variable item_done needed for the writing thread to correctly write on the files.
