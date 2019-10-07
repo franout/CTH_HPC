@@ -1,3 +1,5 @@
+# Assignment 2 report
+
 ## Relevant concepts
 
 **Stack allocation**.  We have learned in Assignment 0 that there are two
@@ -37,7 +39,7 @@
   According to wikipedia locality is defined as:
   >the tendency of a processor to access the same set of memory locations repetitively over
   > a short period of time
-  >*-[wikipedia:Locality of reference]*
+  > *-[wikipedia: Locality of reference]*
 							      
   Exploiting this principle we can use this to access arrays in a faster way, increasing performance.
   Most arrays, or a big portion of them, can be put within one cache line. Caching reduces direct access to memory and keeps
