@@ -30,7 +30,7 @@
   
 **Command line arguments**
   It is possible to pass arguments to a program via command line. If intended, these
-  additional inputs allow the user to change parameters or program behaviour.
+  additional inputs allow the user to change the program behaviour.
   POSIX library contains an easy way to implement the parsing of command line arguments.
 
 **Locality**
@@ -40,7 +40,7 @@
   >*-[wikipedia:Locality of reference]*
 							      
   Exploiting this principle we can use this to access arrays in a faster way, increasing performance.
-  Most arrays can be put within one cache line. Caching reduces direct access to memory and keeps
+  Most arrays, or a big portion of them, can be put within one cache line. Caching reduces direct access to memory and keeps
   part of the data in one quickly accessible location.
   It is important to remember, that accessing data from different parts of the memory
   will always take more time than accessing data from cache.
@@ -113,18 +113,18 @@ All the work is splitted up among different threads, in particular:
 
 *Thread management*
 The Master thread is in charge of the thread management, it will parse the argument given to the program from the command line and handle properly the behaviour of the program accordingly,i.e. creating the required number of computation threads, the degree of the function and the required rows and colums of the output picture.
-It will also wait the computation threads to finish and as last step, a wait for the writing thread which may be slower than the computation threads since it has to deal with writing operation on the HDD.
+It will also wait the computation threads to finish and as last step, a wait for the writing thread which may be slower than others since it has to deal with writing operation on the HDD.
 
 *Computation*
 Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
  
-A clever implementation could be that each computation thread, understands its own slowness, is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
+A clever implementation could be that each computation thread is able to understand its own slowness and it is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
 
 
 *Writing*
 It will open the files accordingly to their names (depending on the grade) and it will use a busy form of waiting for the data for writing them in the proper order.
-Once it will understand, reading the proper global variable, that a given row has been computed and it is ready for be written to the file, it will convert the row to a string, mapping properly each value to a colour, through the modulo operations, since the maximum number of colours is degree +2  ( taking into account also the extreme cases 0 and infity ).
+Once it will understand, reading the proper global variable, that a given row has been computed and it is ready for be written to the file, it will convert the row to a string, mapping properly each value to a colour since the maximum number of colours is degree +2  ( taking into account also the extreme cases 0 and infity ).
   
-Another implementation could be to create a writing thread for each file since thei data are independent from each others.
+Another implementation could be to create a writing thread for each file since their data are independent from each others.
 
-There could be also the possibility to create a thread which is in charge of only map the data to a colour, in this case the thread is also in charge of setting  properly the global variable item_done needed for the writing thread to correctly write on the files.
+There could be also the possibility to create a thread which is in charge of only mapping data to a colour. Moreover, the thread must set properly the global variable item_done needed for the writing thread to correctly write on the files.
