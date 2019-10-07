@@ -118,7 +118,7 @@ It will also wait the computation threads to finish and as last step, a wait for
 *Computation*
 Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
  
-A clever implementation could be that each computation thread is able to understand its own slowness and it is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
+A clever implementation could be that each computation thread measures it's performance. At a certain amount of iterations it would be considered as slow and is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
 
 
 *Writing*
