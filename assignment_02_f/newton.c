@@ -16,6 +16,7 @@ static void * writing_task(void * args);
 
 /*stati global  variables */
 static int N_THREAD,n_row_col, degree;
+static int step;
 static struct timespec sleep_timespec;
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
@@ -23,8 +24,8 @@ static pthread_mutex_t item_done_mutex;
 
 /*variables for data transfer*/
 static char * item_done;
-static u_int8_t ** attractors; // roots in which the function is evolving
-static u_int8_t ** convergences; // # of iterations needed for the convergence to a root
+static double complex** attractors; // roots in which the function is evolving
+static double  complex**  convergences; // # of iterations needed for the convergence to a root
 /*struct for passing argument to write threa*/
 
 typedef struct {
@@ -61,6 +62,7 @@ int main (int argc, char ** argv ) {
 
 
 	sscanf(argv[argc-1],"%d",&degree);
+	step=4/n_row_col;
 	sleep_timespec.tv_nsec=100000;
 	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
 	if(threads_computation==NULL){
@@ -149,8 +151,8 @@ static void * writing_task ( void * args ) {
 	char*work_string;
 
 	/*they are just poitners to the row which have to write*/
-	u_int8_t* result_c;
-	u_int8_t* result_a;
+	double complex * result_c;
+	double complex * result_a;
 
 
 	FILE * fp_attr, *fp_conv;
@@ -193,6 +195,7 @@ static void * writing_task ( void * args ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
 			for(int i=0;i<n_row_col;i++) {
+				// TODO mapping function root:colour
 				sprintf(work_string,"%d ",result_a[i]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				sprintf(work_string,"%d ",result_c[i]);
@@ -221,21 +224,23 @@ static void * computation_task(void * args ) {
 	free(args);
 	double complex x,y,z;
 	double complex attr;
-	int conv; //CHECK TODO
+	int conv; 
+	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
-		u_int8_t * attractor=(u_int8_t *) malloc(sizeof(u_int8_t) *n_row_col);
-		u_int8_t  * convergence=(u_int8_t*) malloc(sizeof(u_int8_t) *n_row_col);
+		double complex * attractor=(double complex*) malloc(sizeof(double complex) *n_row_col);
+		double complex  * convergence=(double complex * ) malloc(sizeof(double complex) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
 			exit(-1);	
 		}
 
 
-		// for the column along x axes
+		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col ; jx++ ){
-			x=(-2+ix*4/n_row_col)+I*(2+jx*4/n_row_col); //TODO precompute a variable
+
+			x=(-2+ix*step)+I*(2+jx*step);  // initial point
 			//TODO :compute work item  and checking correctness
-			for ( conv = 0, attr =0; ; ++conv ) {
+			for ( conv = 0, attr =DEFAULT_VALUE; ; ++conv ) { // TODO add a convergency bound 
 				if ( CHECK CONDITION ) {
 					attr = VALUE;
 					break;
@@ -244,7 +249,7 @@ static void * computation_task(void * args ) {
 					attr = VALUE;
 					break;
 				}
-				for ( EXPRESSION ){
+				for ( EXPRESSION ){ //TODO think about roots
 					if ( CHECK CONDITION ) {
 						attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
 						break;
@@ -264,9 +269,7 @@ static void * computation_task(void * args ) {
 				z=cmul(++j,z); // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - cdiv(y,z); 
-
-
-			}//TODO
+			}
 			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
 		}
