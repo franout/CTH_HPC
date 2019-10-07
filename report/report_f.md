@@ -92,15 +92,15 @@ All the work is splitted up among different threads, in particular:
 
 **Division in subtasks**
 * Thread management
-	- create threads
+  	 - create threads
    	 - give tasks to threads
 	 - wait for threads
 	 - prepare all the data structures for threads
 * Computation
 	+ calculate roots
-	+ splits into subproblems ( it is a possible improvement if the computation is too slow )
-	+ write to global variables ( data transfer)
-	+ check conditions about convergency
+	+ split into subproblems (it is a possible improvement if the computation is too slow )
+	+ write to global variables (data transfer)
+	+ check conditions for convergence
 	+ compute the next value of x
 		
 * Writing
@@ -118,12 +118,12 @@ It will also wait the computation threads to finish and as last step, a wait for
 *Computation*
 Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
  
-A clever implementation could be that each computation thread measures it's performance. At a certain amount of iterations it would be considered as slow and is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
+A clever implementation could be that each computation thread measures its performance. At a certain amount of iterations it would be considered as slow and is capable of creating (and waiting) sub-threads which could, in principle, speed up the overall computation.
 
 
 *Writing*
-The writing thread will open the files according to their names (depending on the grade) and then use a busy form of waiting for the data for writing them in the proper order.
-Regularly reading the global varibales, the thread will wait for a row to be finished and then start converting it into a string and mapping each value to a corresponding colour. The amount of colors depends on the degree of the function + 2 extra cases (convergence to infinity and to zero).
+The writing thread will open the files according to their names then use a busy form of waiting for the data for writing them in the proper order.
+Regularly reading the global variables, the thread will wait for a row to be finished and then start converting it into a string and mapping each value to a corresponding colour. The amount of colors depends on the degree of the function + 2 extra cases (convergence to infinity and to zero).
   
 Another implementation could be to create a writing thread for each file since the data of each is independent from the others.
 
