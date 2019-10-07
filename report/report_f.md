@@ -35,7 +35,7 @@
 
 **Locality**
   According to wikipedia locality is defined as:
-  >the tendency of a processor to access the same set of memory locations reptitively over
+  >the tendency of a processor to access the same set of memory locations repetitively over
   > a short period of time
   >*-[wikipedia:Locality of reference]*
 							      
@@ -118,13 +118,13 @@ It will also wait the computation threads to finish and as last step, a wait for
 *Computation*
 Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
  
-A clever implementation could be that each computation thread is able to understand its own slowness and it is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
+A clever implementation could be that each computation thread measures it's performance. At a certain amount of iterations it would be considered as slow and is capable of creating ( and waiting ) sub-threads which could, in principle, speed up the overall computation.
 
 
 *Writing*
-It will open the files accordingly to their names (depending on the grade) and it will use a busy form of waiting for the data for writing them in the proper order.
-Once it will understand, reading the proper global variable, that a given row has been computed and it is ready for be written to the file, it will convert the row to a string, mapping properly each value to a colour since the maximum number of colours is degree +2  ( taking into account also the extreme cases 0 and infity ).
+The writing thread will open the files according to their names (depending on the grade) and then use a busy form of waiting for the data for writing them in the proper order.
+Regularly reading the global varibales, the thread will wait for a row to be finished and then start converting it into a string and mapping each value to a corresponding colour. The amount of colors depends on the degree of the function + 2 extra cases (convergence to infinity and to zero).
   
-Another implementation could be to create a writing thread for each file since their data are independent from each others.
+Another implementation could be to create a writing thread for each file since the data of each is independent from the others.
 
-There could be also the possibility to create a thread which is in charge of only mapping data to a colour. Moreover, the thread must set properly the global variable item_done needed for the writing thread to correctly write on the files.
+There could be also the possibility to create a thread which is in charge of only mapping colour to a data. Moreover, the thread must set the global variable item_done properly, this variable is needed for the writing thread to correctly write on the files.
