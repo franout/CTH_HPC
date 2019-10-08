@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
 #include <complex.h>
 #define MAX_IT 100
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
@@ -17,7 +18,7 @@ static void * writing_task(void * args);
 
 /*stati global  variables */
 static int N_THREAD,n_row_col, degree;
-static int step;
+static double step;
 static struct timespec sleep_timespec;
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
@@ -61,19 +62,19 @@ int main (int argc, char ** argv ) {
 
 
 	sscanf(argv[argc-1],"%d",&degree);
-	step=4/n_row_col;
+	step=4/((double)n_row_col);
 	sleep_timespec.tv_nsec=100000;
 	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
 	if(threads_computation==NULL){
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
-	attractors=(u_int8_t **) malloc(sizeof(u_int8_t *)*n_row_col);
+	attractors=(double complex **) malloc(sizeof( double complex *)*n_row_col);
 	if(attractors==NULL){
 		fprintf(stderr,"error allocating attractor vector pointer\n");
 		exit(-1);
 	}
-	convergences=(u_int8_t **)malloc(sizeof(u_int8_t *)*n_row_col);
+	convergences=(double complex **)malloc(sizeof(double complex *)*n_row_col);
 	if(convergences==NULL){
 		fprintf(stderr,"error allocating convergence vector pointer\n");
 		exit(-1);
@@ -195,9 +196,9 @@ static void * writing_task ( void * args ) {
 			result_a=attractors[ix];
 			for(int i=0;i<n_row_col;i++) {
 				// TODO mapping function root:colour
-				sprintf(work_string,"%d ",result_a[i]);
+				sprintf(work_string,"%f ",cabs(result_a[i]));
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
-				sprintf(work_string,"%d ",result_c[i]);
+				sprintf(work_string,"%f ",cabs(result_c[i]));
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 			}
 		}
@@ -223,7 +224,8 @@ static void * computation_task(void * args ) {
 	free(args);
 	double complex x,y,z;
 	double complex attr;
-	int conv; 
+	int conv, j;
+	double step_local=step;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
 		double complex * attractor=(double complex*) malloc(sizeof(double complex) *n_row_col);
@@ -232,42 +234,46 @@ static void * computation_task(void * args ) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
 			exit(-1);	
 		}
-
-
 		// for the column along x axe
-		for(size_t jx=0 ;jx<n_row_col ; jx++ ){
-			//TODO roots are always on the unitary circumference
-			x=(-2+ix*step)+I*(2+jx*step);  // initial point
-			//TODO :compute work item  and checking correctness
-			for ( conv = 0, attr =DEFAULT_VALUE; ; ++conv ) { // TODO add a convergency bound 
-				if ( cabs(x)< 1e-3 || abs(cre(x))>10000000000L || abs(cim(x)) >10000000000L ) {
-					attr = VALUE; // TODO treat as additional zero
+		for(size_t jx=0 ;jx<n_row_col; jx++ ){
+			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
+			for ( conv = 0, attr =0; ; ++conv ) { 
+				if ( cabs(x)< 1e-3){ // converging to zero
+					attr = 0; 
 					break;
 				}
+				if (fabs(creal(x))>=1000000000 || fabs(cimag(x)) >=10000000000 ) { // convergin o inf
+
+					attr=100+I*100;
+					break;
+				}
+				/*
+				   for ( EXPRESSION ){ //TODO 
+				   if ( CHECK CONDITION ) {
+				   attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
+				   break;
+				   }	}*/
+				//printf("hello again \n");
+				if ( cabs(x-1)<=1e-3 ){
+					attr=x;
+					break;
+				}	
+				//printf("hello again again \n");
 				if ( conv>=MAX_IT ) {
-					attr = VALUE;
-					break;
-				}
-				for ( EXPRESSION ){ //TODO think about roots
-					if ( CHECK CONDITION ) {
-						attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
-						break;
-					}	}
-				if ( attr != DEFAULT_VALUE ){
 					break;
 				}
 				// computing x_k+1
 				y=x; // getting the current x
 				z=x;
-				for(int j = 1; j < degree; j++) {
-					y=cmul(x,y);	
-					z=cmul(x,z);
+				for( j = 1; j < degree; j++) {
+					y*=x;
+					z*=x;
 				}
-				y=cmul(y,x);
+				y*=y;
 				y--;	
-				z=cmul(++j,z); // multipling by d
+				z*=(++j); // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
-				x=x - cdiv(y,z); 
+				x=x - y/z; 
 			}
 			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
