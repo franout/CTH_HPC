@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
-//#include <complex.h>
+#include <complex.h>
+#define MAX_IT 100
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
  *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
  */ 
@@ -20,8 +21,6 @@ static int step;
 static struct timespec sleep_timespec;
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
-
-
 /*variables for data transfer*/
 static char * item_done;
 static double complex** attractors; // roots in which the function is evolving
@@ -237,15 +236,15 @@ static void * computation_task(void * args ) {
 
 		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col ; jx++ ){
-
+			//TODO roots are always on the unitary circumference
 			x=(-2+ix*step)+I*(2+jx*step);  // initial point
 			//TODO :compute work item  and checking correctness
 			for ( conv = 0, attr =DEFAULT_VALUE; ; ++conv ) { // TODO add a convergency bound 
-				if ( CHECK CONDITION ) {
-					attr = VALUE;
+				if ( cabs(x)< 1e-3 || abs(cre(x))>10000000000L || abs(cim(x)) >10000000000L ) {
+					attr = VALUE; // TODO treat as additional zero
 					break;
 				}
-				if ( CHECK CONDITION ) {
+				if ( conv>=MAX_IT ) {
 					attr = VALUE;
 					break;
 				}
