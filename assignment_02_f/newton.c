@@ -16,19 +16,24 @@
 static void * computation_task(void * args);
 static void * writing_task(void * args);
 
-static inline void add_root(double complex root);
-static int find_color ( double complex numb);
-
 /*stati global  variables */
 static int N_THREAD,n_row_col, degree;
 static double step;
 static struct timespec sleep_timespec;
-static double complex *LUT;
+
+typedef struct {
+	double * angles;
+	size_t n;
+} roots;
+
+static  roots LUT;
+const float PI=3.1415933;
+
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
 static char * item_done;
-static double complex** attractors; // roots in which the function is evolving
+static double ** attractors; // roots in which the function is evolving
 static u_int8_t**  convergences; // # of iterations needed for the convergence to a root
 /*struct for passing argument to write threa*/
 
@@ -73,7 +78,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
-	attractors=(double complex **) malloc(sizeof( double complex *)*n_row_col);
+	attractors=(double  **) malloc(sizeof( double *)*n_row_col);
 	if(attractors==NULL){
 		fprintf(stderr,"error allocating attractor vector pointer\n");
 		exit(-1);
@@ -89,12 +94,20 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error  allocating global variable for data transfer\n");
 		exit(-1);
 	}
-	LUT=(double complex *) malloc(sizeof(double complex)*(degree+2));
-	if(LUT==NULL) {
+	LUT.n=degree+2;
+	LUT.angles=(double*) malloc(sizeof(double) *(LUT.n));
+	if(LUT.angles==NULL) {
 		fprintf(stderr,"error allocating the LUT\n");
 		exit(-1);
 
 	}
+	for(i=0;i<degree;i++){
+		LUT.angles[i]=((double)2*PI)/degree*i;
+	}
+	LUT.angles[LUT.n-2]=999; // value for 0
+	LUT.angles[LUT.n -1]=888; // value for ing
+
+
 	// initializing to all zero  item done and to null the pointer of results
 	for(i=0;i<n_row_col;i++){
 		item_done[i]=0;
@@ -151,7 +164,7 @@ int main (int argc, char ** argv ) {
 	free(threads_computation);
 	free(convergences);
 	free(attractors);
-	free(LUT);
+	free(LUT.angles);
 	return 0;
 }
 
@@ -163,7 +176,7 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	double complex * result_a;
+	double  * result_a;
 
 
 	FILE * fp_attr, *fp_conv;
@@ -206,7 +219,7 @@ static void * writing_task ( void * args ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
 			for(int i=0;i<n_row_col;i++) {
-				sprintf(work_string,"%d ",find_color(result_a[i]));
+				sprintf(work_string,"%f ",result_a[i]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				sprintf(work_string,"%d ", result_c[i] >=MAX_IT ? 1:0  );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
@@ -236,12 +249,12 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,z;
-	double complex attr;
+	double  attr;
 	int j;
 	double step_local=step;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
-		double complex * attractor=(double complex*) malloc(sizeof(double complex) *n_row_col);
+		double  * attractor=(double *) malloc(sizeof(double ) *n_row_col);
 		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
@@ -251,26 +264,23 @@ static void * computation_task(void * args ) {
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 			for ( conv = 0, attr =0; ; ++conv ) { 
-				//TODO PROBLEM WITH ROOTS??
-				if ( cabs(x)< 1e-3){ // converging to zero
-					attr = 0; 
+				if ( cabs(x)<= 1e-3){ // converging to zero
+					attr = 999; 
 					break;
 				}
 				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
 
-					attr=100+I*100;
+					attr=888;
 					break;
 				}
-				/*
-				   for ( EXPRESSION ){ //TODO 
-				   if ( CHECK CONDITION ) {
-				   attr = VALUE_NOT_EQUAL_TO_THE_DEFAULT_ONE;
-				   break;
-				   }	}*/
+				for ( int k=0; k<LUT.n-2 ;k++ ){  
+					if ( LUT.angles[k]-carg(x)<=1e-3 && cabs(x) -1<=1e-3 ) {
+						attr=carg(x);
+						break;
+					}
 
-				if ( cabs(x)-1<=1e-3 ){
-					// found a root
-					attr=x;
+				}
+				if(attr!=0) {
 					break;
 				}	
 				if ( conv>=MAX_IT ) {
@@ -288,11 +298,8 @@ static void * computation_task(void * args ) {
 				z*=(++j); // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - y/z;
-			     }
+			}
 			// find a possible root
-			pthread_mutex_lock(&item_done_mutex);
-			add_root(attr);
-			pthread_mutex_unlock(&item_done_mutex);
 			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
 		}
@@ -307,25 +314,3 @@ static void * computation_task(void * args ) {
 	return NULL;
 }
 
-
-static inline void add_root(double complex root){
-
-	static int  index=0;
-	if(index<(degree+2)){
-		// still missing rooots
-		LUT[index++]=root;
-	}
-
-
-}
-static int find_color ( double complex numb) {
-
-	int i;
-	for(i=0;i<degree+2;i++) {
-
-		if ( cabs(numb) - cabs(LUT[i])<=1e-6) {
-			return i;
-		}
-	}
-	return 0;
-}
