@@ -1,13 +1,13 @@
-CC= gcc
+CC= gcc --std=c11
 CFLAGS= -Wall -o
 OPT= -O0
-LIBS= 
+LIBS=-fopenmp -lm 
 
 .PHONY: all
 compile:
 	$(CC) $(CFLAGS) ./cell_distances.exe ./cell_distances.c $(LIBS) $(OPT)
 all: compile
-$(CC) $(CFLAGS) ./newton_gdb.exe ./newton.c $(LIBS) -Og -ggdb
+	$(CC) $(CFLAGS) ./newton_gdb.exe ./newton.c $(LIBS) -Og -ggdb
 
 
 execute:

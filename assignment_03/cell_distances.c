@@ -9,12 +9,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h> 
+#include <unistd.h>
+#include <math.h>
 #define INPUT_FILE "./coordinates.txt"
-int main (int argc , char ** argv ) {
 
+
+typedef struct {
+int * table_occ;
+char ** value;
+int n;
+} hash_map;
+
+
+static hash_map MAP;
+
+
+typedef struct {
+char row[25]; // supposing points between -10 and 10 with a fixed format (sign)yy.xxx 
+} POINT_t;
+
+
+int main (int argc , char ** argv ) {
+	POINT_t point, point2;
 	int N_THREAD=0;
 	int option=0;
-	FILE * fp;
+	FILE * fp,*fp_1;
+	float x1,x2,y1,y2,z1,z2,dist_local;
+
 	/*it returns the parsed char and as third arg it requires the separation char for arguments*/
 	while ((option = getopt(argc,argv,"t:"))!=-1) {
 
@@ -32,31 +53,25 @@ int main (int argc , char ** argv ) {
 	omp_set_num_threads(N_THREAD);
 
 	fp=fopen(INPUT_FILE,"r");
-	if(fp==NULL) {
+	fp_1=fopen(INPUT_FILE,"r");
+	if(fp==NULL || fp_1==NULL) {
 		fprintf(stderr,"errror opening the file\n");
 		exit(-1);
 	}
+	
 
-
-	//openMP parallelism  
-	/*4 task
-	 *
-	 *
-	 *     Computing the distance of two points and incrementing the corresponding counts.
-	 *
-	 *         Reading and parsing the file.
-	 *
-	 *             Memory management.
-	 *
-	 *                 Parallization.
-	 *
-	 *
-	 * */
-
-
-
-
-// fashion way 
+	while ( fread(point.row,sizeof(char),24,fp)>0) {
+		sscanf(point.row,"%f %f %f\n",&x1,&y1,&z1);
+#pragma omp task shared(x1,y1,z1, dist_local)
+		fread(point2.row,sizeof(char),24,fp);
+		sscanf(point2.row,"%f %f %f\n",&x2,&y2,&z2);
+		dist_local =sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
+#pragma omp taskwait 
+	printf("%f\n", dist_local);
+	
+	}
+	
+	// fashion way 
 //	float a = 37.777779;
 //
 //	int b = a; // b = 37    
@@ -65,9 +80,8 @@ int main (int argc , char ** argv ) {
 //	int d = c; // d = 77;    
 //	a = b + d / (float)100; // a = 37.770000;
 
-
-
 	fclose(fp);
+	fclose(fp_1);
 	if(fp==NULL) {
 		fprintf(stderr,"error closing the file\n");
 		exit(-1);
@@ -76,20 +90,4 @@ int main (int argc , char ** argv ) {
 	return 0;
 }
 
-/*
-   Implementation details: Simplifications
 
-   You can assume that coordinates are between -10 and 10.
-
-   Implementation details: Memory consition
-
-   The programm at no time may consume more than 1 GiBi byte = 1024^3 bytes of memory. This will not be tested. Explain in your report why your program does not allocate more.
-
-   You may not make any assumption on the number of cells except that there is less than 2^32.
-
-   You do not have to proof that this is the case, but your report has to contain an arugment why your implementation achieves this.
-   Implementation details: Precision
-
-   Round off error are tolerated to a certain extend.
-
-   In case of doubt use the test script from below.*//
