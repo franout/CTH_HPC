@@ -28,13 +28,14 @@ typedef struct {
 
 static  roots LUT;
 const float PI=3.1415933;
-
+const int  colour_table[3][3] = { {255,0,0} , {0,255,0} , {0,0,255} };
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
 static char * item_done;
 static double ** attractors; // roots in which the function is evolving
 static u_int8_t**  convergences; // # of iterations needed for the convergence to a root
+
 /*struct for passing argument to write threa*/
 
 typedef struct {
@@ -177,7 +178,7 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	double  * result_a;
-
+	double 	mt= 255.0/MAX_IT;
 
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
@@ -200,9 +201,10 @@ static void * writing_task ( void * args ) {
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
 	}
-	sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,degree+2);
+
+	// header of the files 
+	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col,n_row_col);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);
-	sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,2);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 	for ( size_t ix = 0; ix < n_row_col; ) {
 		//revisit loop structure for performance improvements later
@@ -219,9 +221,12 @@ static void * writing_task ( void * args ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
 			for(int i=0;i<n_row_col;i++) {
+				// writing attracctors file 
 				sprintf(work_string,"%f ",result_a[i]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
-				sprintf(work_string,"%d ", result_c[i] >=MAX_IT ? 1:0  );
+				
+				// writing convergences file 
+				sprintf(work_string,"%d ",(int)floor(mt*result_c[i])   );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 			}
 		}
