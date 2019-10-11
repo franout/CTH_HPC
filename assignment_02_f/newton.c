@@ -289,7 +289,7 @@ static void * computation_task(void * args ) {
 					break;
 				}
 							for ( int k=0; k<LUT.n-2 ;k++ ){
-				      //TODO CHECK conditions	
+				    
 					if ( (cabs(x)-1)<=1e-3 &&  fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
 						attr=carg(x);
 						break;
