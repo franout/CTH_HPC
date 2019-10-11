@@ -287,7 +287,7 @@ static void * computation_task(void * args ) {
 					attr=888;
 					break;
 				}
-				if( cabs(x)-1<=1e-3){
+				if( cabs(x)-1<=1e-3 && cabs(x)-1>=-1e-3){
 				for ( int k=0; k<LUT.n-2 ;k++ ){
 				      //TODO CHECK conditions	
 					if ( fabs(LUT.angles[k]-carg(x))<=1  ) {
