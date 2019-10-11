@@ -226,11 +226,11 @@ static void * writing_task ( void * args ) {
 			for(int i=0;i<n_row_col;i++) {
 				// writing attracctors file
 				for( j=0;j<LUT.n; j++) {
-				if ( fabs(LUT.angles[j]-result_a[i])<2 ) {
+				if ( fabs(LUT.angles[j]-result_a[i])<1 ) {
 					break;
 				}
 				}
-				sprintf(work_string,"%d %d %d ",j ,j ,j);
+				sprintf(work_string,"%d %d %d " ,(int) ((double)j/3)*colour_table[j%3][0],(int) ((double)j/3)*colour_table[j%3][1],(int) ((double)j/3)*colour_table[j%3][2]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				
 				// writing convergences file 
