@@ -300,6 +300,7 @@ static void * computation_task(void * args ) {
 					break;
 				}	
 				// computing x_k+1
+				double complex old_x= x;
 				y=x; // getting the current x
 				z=x;
 				for( j = 1; j < degree-1; j++) {
@@ -311,6 +312,10 @@ static void * computation_task(void * args ) {
 				z=z*degree; // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - ((double complex)y/z);
+				if ( cabs(x-old_x)<=1e-5) {
+					attr=carg(x);	
+					break;
+				}
 		
 			}
 			// find a possible root
