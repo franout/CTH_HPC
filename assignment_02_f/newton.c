@@ -277,6 +277,7 @@ static void * computation_task(void * args ) {
 		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
+
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) { 
 				if ( cabs(x)<= 1e-3){ // converging to zero
 					attr = 999; 
@@ -289,7 +290,7 @@ static void * computation_task(void * args ) {
 				}
 							for ( int k=0; k<LUT.n-2 ;k++ ){
 				      //TODO CHECK conditions	
-					if ( fabs(LUT.angles[k]-fabs(carg(x)))<=1  && (cabs(x)-1)<=1e-1 ) {
+					if ( (cabs(x)-1)<=1e-3 &&  fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
 						attr=carg(x);
 						break;
 					}
@@ -301,13 +302,13 @@ static void * computation_task(void * args ) {
 				// computing x_k+1
 				y=x; // getting the current x
 				z=x;
-				for( j = 1; j < degree; j++) {
+				for( j = 1; j < degree-1; j++) {
 					y*=x;
 					z*=x;
 				}
-				y*=y;
-				y--;	
-				z*=(++j); // multipling by d
+				y*=x;
+				y=y-1-0*I;	
+				z=z*degree; // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - ((double complex)y/z);
 		
