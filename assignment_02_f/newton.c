@@ -7,7 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include <complex.h>
-#define MAX_IT 100
+#define MAX_IT 50
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
  *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
  */ 
@@ -28,6 +28,7 @@ typedef struct {
 
 static  roots LUT;
 const float PI=3.1415933;
+				// red 		green 	blue 
 const int  colour_table[3][3] = { {255,0,0} , {0,255,0} , {0,0,255} };
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
@@ -178,8 +179,9 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	double  * result_a;
-	double 	mt= 255.0/MAX_IT;
-
+	double const mt= 255.0/MAX_IT;
+	double const mt_c=255.0/(degree+2);
+	int j=0;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
 	fp_attr= fopen(files_local->attractors_file,"w");
@@ -221,12 +223,19 @@ static void * writing_task ( void * args ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
 			for(int i=0;i<n_row_col;i++) {
-				// writing attracctors file 
-				sprintf(work_string,"%f ",result_a[i]);
+				// writing attracctors file
+				for( j=0;j<LUT.n; j++) {
+				if ( fabs(LUT.angles[j]-result_a[i])<1 ) {
+					break;
+				}
+				}
+				int local = j * mt_c;
+				sprintf(work_string,"%d %d %d ",local,local,local);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				
 				// writing convergences file 
-				sprintf(work_string,"%d ",(int)floor(mt*result_c[i])   );
+				local= (int) floor(mt*result_c[i]);
+				sprintf(work_string,"%d %d %d ",local,local,local   );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 			}
 		}
