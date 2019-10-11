@@ -287,17 +287,15 @@ static void * computation_task(void * args ) {
 					attr=888;
 					break;
 				}
-				if( cabs(x)-1<=1e-3 && cabs(x)-1>=-1e-3){
-				for ( int k=0; k<LUT.n-2 ;k++ ){
+							for ( int k=0; k<LUT.n-2 ;k++ ){
 				      //TODO CHECK conditions	
-					if ( fabs(LUT.angles[k]-carg(x))<=1  ) {
+					if ( fabs(LUT.angles[k]-fabs(carg(x)))<=1  && (cabs(x)-1)<=1e-1 ) {
 						attr=carg(x);
 						break;
 					}
 
 				}
-				}
-				if(attr!=0) {
+						if(attr!=0) {
 					break;
 				}	
 				// computing x_k+1
