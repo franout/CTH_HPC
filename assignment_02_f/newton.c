@@ -229,12 +229,12 @@ static void * writing_task ( void * args ) {
 					break;
 				}
 				}
-				int local = j * mt_c;
-				sprintf(work_string,"%d %d %d ",local,local,local);
+				//TODO perfomance improvement	
+				sprintf(work_string,"%d %d %d ",(int)floor(j*mt_c),colour_table[j%3][1] ,colour_table[j%3][2]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				
 				// writing convergences file 
-				local= (int) floor(mt*result_c[i]);
+				int local= (int) floor(mt*result_c[i]);
 				sprintf(work_string,"%d %d %d ",local,local,local   );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 			}
@@ -287,7 +287,8 @@ static void * computation_task(void * args ) {
 					attr=888;
 					break;
 				}
-				for ( int k=0; k<LUT.n-2 ;k++ ){  
+				for ( int k=0; k<LUT.n-2 ;k++ ){
+				      //TODO CHECK conditions	
 					if ( LUT.angles[k]-carg(x)<=1e-3 && cabs(x) -1<=1e-3 ) {
 						attr=carg(x);
 						break;
