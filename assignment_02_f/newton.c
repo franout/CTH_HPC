@@ -278,7 +278,7 @@ static void * computation_task(void * args ) {
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) { 
-				if ( sqrt(pow(creal(x),2)+pow(cimag(x),2))<= 1e-3){ // converging to zero
+				if ( cabs(x)<= 1e-3){ // converging to zero
 					attr = 999; 
 					break;
 				}
@@ -287,7 +287,7 @@ static void * computation_task(void * args ) {
 					attr=888;
 					break;
 				}
-				if( cabs(x-1)<=1e-3){
+				if( cabs(x)-1<=1e-3){
 				for ( int k=0; k<LUT.n-2 ;k++ ){
 				      //TODO CHECK conditions	
 					if ( fabs(LUT.angles[k]-carg(x))<=1  ) {
@@ -295,7 +295,8 @@ static void * computation_task(void * args ) {
 						break;
 					}
 
-				}}
+				}
+				}
 				if(attr!=0) {
 					break;
 				}	
