@@ -277,8 +277,8 @@ static void * computation_task(void * args ) {
 		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
-			for ( conv = 0, attr =0; ; ++conv ) { 
-				if ( cabs(x)<= 1e-3){ // converging to zero
+			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) { 
+				if ( sqrt(pow(creal(x),2)+pow(cimag(x),2))<= 1e-3){ // converging to zero
 					attr = 999; 
 					break;
 				}
@@ -298,9 +298,6 @@ static void * computation_task(void * args ) {
 				if(attr!=0) {
 					break;
 				}	
-				if ( conv>=MAX_IT ) {
-					break;
-				}
 				// computing x_k+1
 				y=x; // getting the current x
 				z=x;
@@ -313,6 +310,7 @@ static void * computation_task(void * args ) {
 				z*=(++j); // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - ((double complex)y/z);
+		
 			}
 			// find a possible root
 			attractor[jx]=attr; // maping function for color
