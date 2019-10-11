@@ -4,7 +4,7 @@ OPT= -O0
 LIBS= -pthread -lm
 
 .PHONY: all
-compile:
+newton:
 	$(CC) $(CFLAGS) ./newton.exe ./newton.c $(LIBS) -O2
 all: compile
 	
@@ -25,8 +25,8 @@ check: compile_O0
 
 check_submission: check pack
 	/home/hpc2019/a2_grading/check_submission.py ./newton.tar.gz
-pack:	compile
-	tar czf newton.tar.gz ./newton.exe 
+pack:newton
+	tar czf newton.tar.gz ./newton.exe ./Makefile ./newton.c 
 compile_O0:
 	$(CC) $(CFLAGS) ./newton.exe ./newton.c $(LIBS) $(OPT)
 gdb:
