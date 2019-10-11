@@ -181,7 +181,7 @@ static void * writing_task ( void * args ) {
 	double  * result_a;
 	double const mt= 255.0/MAX_IT;
 	double const mt_c=255.0/(degree+2);
-	int j=0;
+	size_t j=0;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
 	fp_attr= fopen(files_local->attractors_file,"w");
@@ -205,8 +205,9 @@ static void * writing_task ( void * args ) {
 	}
 
 	// header of the files 
-	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col,n_row_col);
-	fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);
+	sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,degree+2);
+	fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
+	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col, n_row_col);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 	for ( size_t ix = 0; ix < n_row_col; ) {
 		//revisit loop structure for performance improvements later
@@ -225,12 +226,11 @@ static void * writing_task ( void * args ) {
 			for(int i=0;i<n_row_col;i++) {
 				// writing attracctors file
 				for( j=0;j<LUT.n; j++) {
-				if ( fabs(LUT.angles[j]-result_a[i])<5 ) {
+				if ( fabs(LUT.angles[j]-result_a[i])<2 ) {
 					break;
 				}
 				}
-				//TODO perfomance improvement	
-				sprintf(work_string,"%d %d %d ",(int)floor(j*((double)colour_table[j%3][0]/(degree+2))),(int)floor(j*((double)colour_table[j%3][1]/(degree+2))),(int)floor(j*((double)colour_table[j%3][2]/(degree+2))));
+				sprintf(work_string,"%d %d %d ",j ,j ,j);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				
 				// writing convergences file 
