@@ -26,7 +26,7 @@ check: compile_O0
 check_submission: check pack
 	/home/hpc2019/a2_grading/check_submission.py ./newton.tar.gz
 pack:	compile
-	tar czf newton.tar.gz ./newton.exe ./newton.c
+	tar czf newton.tar.gz ./newton.exe 
 compile_O0:
 	$(CC) $(CFLAGS) ./newton.exe ./newton.c $(LIBS) $(OPT)
 gdb:

@@ -136,8 +136,8 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating string for file name \n");
 		exit(-1);
 	}
-	sprintf(write_t_args.convergences_file,"newton_convergence_x%d.ppm",degree);
-	sprintf(write_t_args.attractors_file,"newton_attractors_x%d.ppm",degree);
+	sprintf(write_t_args.convergences_file,"./newton_convergence_x%d.ppm",degree);
+	sprintf(write_t_args.attractors_file,"./newton_attractors_x%d.ppm",degree);
 
 	/*creating writing thread*/
 	if ((ret = pthread_create(&thread_WR, NULL, writing_task,(void *)(&write_t_args) ))) {
@@ -230,7 +230,7 @@ static void * writing_task ( void * args ) {
 				}
 				}
 				//TODO perfomance improvement	
-				sprintf(work_string,"%d %d %d ",(int)floor(j*mt_c),colour_table[j%3][1] ,colour_table[j%3][2]);
+				sprintf(work_string,"%d %d %d ",(int)floor(j*((double)colour_table[j%3][0]/(degree+2))),(int)floor(j*((double)colour_table[j%3][1]/(degree+2))),(int)floor(j*((double)colour_table[j%3][2]/(degree+2))));
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				
 				// writing convergences file 
@@ -289,7 +289,7 @@ static void * computation_task(void * args ) {
 				}
 				for ( int k=0; k<LUT.n-2 ;k++ ){
 				      //TODO CHECK conditions	
-					if ( LUT.angles[k]-carg(x)<=1e-3 && cabs(x) -1<=1e-3 ) {
+					if ( fabs(LUT.angles[k]-carg(x))<=1e-3 && cabs(x-1) <=1e-3 ) {
 						attr=carg(x);
 						break;
 					}
@@ -312,7 +312,7 @@ static void * computation_task(void * args ) {
 				y--;	
 				z*=(++j); // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
-				x=x - y/z;
+				x=x - ((double complex)y/z);
 			}
 			// find a possible root
 			attractor[jx]=attr; // maping function for color
