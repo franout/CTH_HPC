@@ -178,7 +178,7 @@ static void * writing_task ( void * args ) {
 	u_int8_t * result_c;
 	double  * result_a;
 	double const mt= 255.0/MAX_IT;
-	double const mt_c= 255.0/(degree+2);
+	double const mt_c= 2/(degree+2-1);
 	
 	size_t j=0;
 	FILE * fp_attr, *fp_conv;
@@ -233,7 +233,9 @@ static void * writing_task ( void * args ) {
 				// b = int(max(0, 255*(1 - ratio)))
 				//     r = int(max(0, 255*(ratio - 1)))
 				//         g = 255 - b - r
-				sprintf(work_string,"%d %d %d " ,7-1-j,(int) ((((double)j/(degree+2))*2-1)*255),(int)((1-2*((double)j/(degree+2)))*255) );
+				
+
+				sprintf(work_string,"%d %d %d " ,7-1-j, (int) (1-(mt_c * j )) ,(int) ( (mt_c*j) -1) );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
