@@ -29,7 +29,7 @@ typedef struct {
 static  roots LUT;
 const float PI=3.1415933;
 // red 		green 	blue 
-const int  colour_table[3][3] = { {255,0,0} , {0,255,0} , {0,0,255} };
+const int  colour_table[3][3] = { {1,0,0} , {0,1,0} , {0,0,1} };
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
