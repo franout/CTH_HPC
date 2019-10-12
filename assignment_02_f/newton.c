@@ -331,7 +331,7 @@ static void * computation_task(void * args ) {
 
 			}
 			// find a possible root
-			attractor[jx]=attr+PI; // maping function for color
+			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
 		}
 		nanosleep(&sleep_timespec, NULL);
