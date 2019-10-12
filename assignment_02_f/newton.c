@@ -307,16 +307,22 @@ static void * computation_task(void * args ) {
 			
 				// computing x_k+1
 				old_x= x;
-				y=x*old_x; // getting the current x
-				z=x*degree;
-				for( j = 1; j < degree-1; j++) {
+				z=1;
+				if(degree==1) {
+				y=x-1-0*I;
+				}
+				else{
+				y=1; // getting the current x
+				for( j = 0; j < degree; j++) {
 					y*=x;
 					z*=x;
 				}
+				y*=x;
 				y=y-1-0*I;
-				//j++;	
-				//z=z*j; // multipling by d
-				// y has x_k^d z has x_k^(d-1)*d
+				j++;	
+				z=z*j; // multipling by d
+				// y has x_k^d z has x_k^(d-1)*d 
+				}
 				x=x - (y/z);
 				if ( cabs(x-old_x)<=1e-5) {
 					attr=fabs(carg(x));	
@@ -325,7 +331,7 @@ static void * computation_task(void * args ) {
 
 			}
 			// find a possible root
-			attractor[jx]=attr; // maping function for color
+			attractor[jx]=attr+PI; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
 		}
 		nanosleep(&sleep_timespec, NULL);
