@@ -27,7 +27,7 @@ typedef struct {
 } roots;
 
 static  roots LUT;
-const float PI=3.1415933;
+const float TPI=6.14;
 // red 		green 	blue 
 const int  colour_table[3][3] = { {1,0,0} , {0,1,0} , {0,0,1} };
 /*mutex*/
@@ -75,12 +75,13 @@ int main (int argc, char ** argv ) {
 	sscanf(argv[argc-1],"%d",&degree);
 	step=4/((double)n_row_col);
 	sleep_timespec.tv_nsec=100000;
-	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);	if(threads_computation==NULL){
+	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);	
+	if(threads_computation==NULL){
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
 	attractors=(double  **) malloc(sizeof( double *)*n_row_col);
-if(attractors==NULL){
+	if(attractors==NULL){
 		fprintf(stderr,"error allocating attractor vector pointer\n");
 		exit(-1);
 	}
@@ -101,26 +102,23 @@ if(attractors==NULL){
 		exit(-1);
 
 	}
-	for(i=0;i<degree;i++){
-		LUT.angles[i]=((double)2*PI)/degree*i;
+	LUT.angles[0]=0;
+	LUT.angles[1]=((double)TPI)/degree;
+	for(i=2;i<degree;i++){
+		LUT.angles[i]=LUT.angles[0]*i;
 	}
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
 
 
-	// initializing to all zero  item done and to null the pointer of results
-	for(i=0;i<n_row_col;i++){
-		item_done[i]=0;
-	}
-
 
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
-		/*if (args==NULL){
+		if (args==NULL){
 			fprintf(stderr,"error allocating arguments for computation threads\n");
 			exit(-1);
-		}*/
+		}
 		*args=i;
 		if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (void * )args ))) {
 			fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
@@ -173,7 +171,7 @@ if(attractors==NULL){
 
 static void * writing_task ( void * args ) {
 	char * item_done_loc = (char*)calloc(n_row_col, sizeof(char));
-	char*work_string,*work_string_attr, *base_attr,*base_conv;
+	char*work_string,*work_string_attr;
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
@@ -198,8 +196,8 @@ static void * writing_task ( void * args ) {
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
-	work_string=(char *) malloc ( sizeof(char)* 4*1000);
-	work_string_attr=(char *) malloc ( sizeof(char)* 4*1000);
+	work_string=(char *) malloc ( sizeof(char)* 4000);
+	work_string_attr=(char *) malloc ( sizeof(char)* 4000);
 	if(work_string==NULL || work_string_attr==NULL){
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
@@ -224,8 +222,15 @@ static void * writing_task ( void * args ) {
 		for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
-			for(int i=0;i<n_row_col;i++) {
+			
+			for (int i=0; i<(n_row_col/4000);i++){	
+			//work_string[0]='\0';
+			//work_string_attr[0]='\0';
+			int offset=0;
+			//for(int i=0;i<n_row_col;i++) 
+				for(int j=i;j<4000;j++){
 				// writing attracctors file
+				
 				for( j=0;j<LUT.n; j++) {
 					if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
 						break;
@@ -236,22 +241,24 @@ static void * writing_task ( void * args ) {
 				//         g = 255 - b - r
 				
 				double tmp= mt_c*j;
-				sprintf(work_string,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
-				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
-
-				// writing convergences file 
+				offset+=sprintf(work_string_attr+offset,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
+							// writing convergences file 
 				int local= (int) (mt*result_c[i]);
-				sprintf(work_string,"%d %d %d ",local,local,local   );
+				offset+=sprintf(work_string+offset,"%d %d %d ",local,local,local   );
+				}
+
+
 
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
-				}
+				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);
+		}
 			free(result_a);
 			free(result_c);
 		}
 	}
 	free(work_string);
 	free(item_done_loc);
-
+	free(work_string_attr);
 	fclose(fp_conv);
 	fclose(fp_attr);
 	if(fp_attr==NULL || fp_conv==NULL){

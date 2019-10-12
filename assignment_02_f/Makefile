@@ -31,7 +31,7 @@ performance: newton
 	hyperfine -r 10 './newton -t 10 -l 1000 7'
 	hyperfine -r 10 './newton  -t 10 -l 2000 7'
 	hyperfine -r 10 './newton  -t 10 -l 3000 7'
-	
+	make clean	
 
 check: newton 
 	valgrind --leak-check=full --show-leak-kinds=all ./newton
