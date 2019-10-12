@@ -104,8 +104,8 @@ if(attractors==NULL){
 	for(i=0;i<degree;i++){
 		LUT.angles[i]=((double)2*PI)/degree*i;
 	}
-	LUT.angles[LUT.n-2]=999; // value for 0
-	LUT.angles[LUT.n -1]=888; // value for ing
+	LUT.angles[LUT.n-2]=999.00; // value for 0
+	LUT.angles[LUT.n -1]=888.00; // value for ing
 
 
 	// initializing to all zero  item done and to null the pointer of results
@@ -158,6 +158,7 @@ if(attractors==NULL){
 		fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
 		exit(1);
 	}
+
 
 
 	free(item_done);
@@ -245,7 +246,17 @@ static void * writing_task ( void * args ) {
 			}
 		}
 	}
+	printf("%d\n",LUT.n);
+for(int i=0;i<LUT.n; i++ ) {
+printf("%f.. \n",LUT.angles[i]);
+}
 
+	for(int j=0;j<1000;j++){
+	for(int k=0;k<1000;k++){
+	printf("%f " , attractors[j][k]);
+	}	
+	printf("\n");
+	}
 
 
 	free(work_string);
@@ -285,18 +296,18 @@ static void * computation_task(void * args ) {
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) { 
 				if ( cabs(x)<= 1e-3){ // converging to zero
-					attr = 999; 
+					attr = 999.00; 
 					break;
 				}
 				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
 
-					attr=888;
+					attr=888.00;
 					break;
 				}
 				for ( int k=0; k<=LUT.n-2 ;k++ ){
 
 					if ( (cabs(x)-1)<=1e-3 &&  fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
-						attr=carg(x);
+						attr=fabs(carg(x));
 						break;
 					}
 
@@ -318,7 +329,7 @@ static void * computation_task(void * args ) {
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - ((double complex)y/z);
 				if ( cabs(x-old_x)<=1e-5) {
-					attr=carg(x);	
+					attr=fabs(carg(x));	
 					break;
 				}
 
