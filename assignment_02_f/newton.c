@@ -228,7 +228,7 @@ static void * writing_task ( void * args ) {
 					}
 				}
 				// TODO mapping function
-				sprintf(work_string,"%d %d %d " ,j, (j<<1)%(degree+2) , (j<<2)%(degree+2) );
+				sprintf(work_string,"%d %d %d " ,j%(degree+2), (j<<1)%(degree+2) , (j<<2)%(degree+2) );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
