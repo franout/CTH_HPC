@@ -173,7 +173,7 @@ if(attractors==NULL){
 
 static void * writing_task ( void * args ) {
 	char * item_done_loc = (char*)calloc(n_row_col, sizeof(char));
-	char*work_string;
+	char*work_string,*work_string_attr, *base_attr,*base_conv;
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
@@ -198,8 +198,9 @@ static void * writing_task ( void * args ) {
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
-	work_string=(char *) malloc ( sizeof(char)* 30);
-	if(work_string==NULL){
+	work_string=(char *) malloc ( sizeof(char)* 4*1000);
+	work_string_attr=(char *) malloc ( sizeof(char)* 4*1000);
+	if(work_string==NULL || work_string_attr==NULL){
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
 	}
@@ -241,8 +242,11 @@ static void * writing_task ( void * args ) {
 				// writing convergences file 
 				int local= (int) (mt*result_c[i]);
 				sprintf(work_string,"%d %d %d ",local,local,local   );
+
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
-			}
+				}
+			free(result_a);
+			free(result_c);
 		}
 	}
 	free(work_string);
@@ -281,21 +285,16 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) { 
-				double x_re=creal(x);
-			       x_re=x_re*x_re;	
-				double x_im=cimag(x);
-				x_im=cimag(x);
-				double tmp= x_re+x_im;	
-				if ( tmp<= 1e-6){ // converging to zero
+				if ( cabs(x)<= 1e-3){ // converging to zero
 					attr = 999.00; 
 					break;
 				}
-				if (x_re>=1000000000L || x_im >=10000000000L ) { // convergin o inf
+				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
 
 					attr=888.00;
 					break;
 				}
-				if(tmp-1<=1e-3){
+				if(cabs(x)-1<=1e-3){
 				for (k=0; k<=LUT.n-2 ;k++ ){
 
 					if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
