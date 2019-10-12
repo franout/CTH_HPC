@@ -313,7 +313,7 @@ static void * computation_task(void * args ) {
 				}
 				else{
 				y=1; // getting the current x
-				for( j = 0; j < degree; j++) {
+				for( j =0 ; j < degree-1; j++) {
 					y*=x;
 					z*=x;
 				}
