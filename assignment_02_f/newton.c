@@ -307,16 +307,15 @@ static void * computation_task(void * args ) {
 			
 				// computing x_k+1
 				old_x= x;
-				y=x; // getting the current x
-				z=x;
+				y=x*old_x; // getting the current x
+				z=x*degree;
 				for( j = 1; j < degree-1; j++) {
 					y*=x;
 					z*=x;
 				}
-				y*=x;
 				y=y-1-0*I;
-				j++;	
-				z=z*j; // multipling by d
+				//j++;	
+				//z=z*j; // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - (y/z);
 				if ( cabs(x-old_x)<=1e-5) {
