@@ -233,7 +233,7 @@ static void * writing_task ( void * args ) {
 				// b = int(max(0, 255*(1 - ratio)))
 				//     r = int(max(0, 255*(ratio - 1)))
 				//         g = 255 - b - r
-				sprintf(work_string,"%d %d %d " ,7-1-j,(int) ((((double)j/(degree+2))-1)*255),(int)((1-((double)j/(degree+2)))*255) );
+				sprintf(work_string,"%d %d %d " ,7-1-j,(int) ((((double)j/(degree+2))*2-1)*255),(int)((1-2*((double)j/(degree+2)))*255) );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
