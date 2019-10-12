@@ -228,7 +228,7 @@ static void * writing_task ( void * args ) {
 					}
 				}
 				// TODO mapping function
-				sprintf(work_string,"%d %d %d ",colour_table[j%3][0]*((int)(j* (255.00/(degree+2)))) ,colour_table[j%3][1]*((int)(j* (255.00/(degree+2)))),colour_table[j%3][2]*((int)(j* (255.00/(degree+2)))));
+				sprintf(work_string,"%d %d %d ",colour_table[j%3][0]*((int)( (255.00/(degree+2)))) ,colour_table[j%3][1]*((int)( (255.00/(degree+2)))),colour_table[j%3][2]*((int)( (255.00/(degree+2)))));
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
