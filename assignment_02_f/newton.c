@@ -75,13 +75,12 @@ int main (int argc, char ** argv ) {
 	sscanf(argv[argc-1],"%d",&degree);
 	step=4/((double)n_row_col);
 	sleep_timespec.tv_nsec=100000;
-	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
-	if(threads_computation==NULL){
+	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);	if(threads_computation==NULL){
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
 	attractors=(double  **) malloc(sizeof( double *)*n_row_col);
-	if(attractors==NULL){
+if(attractors==NULL){
 		fprintf(stderr,"error allocating attractor vector pointer\n");
 		exit(-1);
 	}
@@ -90,7 +89,6 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating convergence vector pointer\n");
 		exit(-1);
 	}
-
 	item_done=(char *) malloc(sizeof(char)*n_row_col);
 	if(item_done==NULL) {
 		fprintf(stderr,"error  allocating global variable for data transfer\n");
@@ -119,10 +117,10 @@ int main (int argc, char ** argv ) {
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
-		if (args==NULL){
+		/*if (args==NULL){
 			fprintf(stderr,"error allocating arguments for computation threads\n");
 			exit(-1);
-		}
+		}*/
 		*args=i;
 		if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (void * )args ))) {
 			fprintf(stderr,"Error %d creating thread: %d \n", ret,i);

@@ -14,11 +14,25 @@ all: newton
 	./newton.exe -t 4 -l 1000 5
 
 performance: newton
-	hyperfine -r 10 './newton.exe -t 1 -l 10 1'
-	hyperfine -r 10 './newton.exe -t 2 -l 37 3'
-	hyperfine -r 10 './newton.exe -t 3 -l 1000 4'
-	hyperfine -r 10 './newton.exe -t 4 -l 1000 5'
-
+	##### single thread varialbe d
+	
+	hyperfine -r 10 './newton -t 1 -l 1000 1'
+	hyperfine -r 10 './newton -t 1 -l 1000 2'
+	hyperfine -r 10 './newton -t 1 -l 1000 5'	
+	hyperfine -r 10 './newton -t 1 -l 1000 7'
+	hyperfine -r 10 './newton -t 2 -l 37 3'
+	
+	
+	##multithreads
+	hyperfine -r 10 './newton -t 1 -l 1000 5'
+	hyperfine -r 10 './newton  -t 2 -l 1000 5'
+	hyperfine -r 10 './newton  -t 3 -l 1000 5'
+	hyperfine -r 10 './newton  -t 4 -l 1000 5'
+	##  varyng numbers of lines
+	hyperfine -r 10 './newton -t 10 -l 1000 7'
+	hyperfine -r 10 './newton  -t 10 -l 2000 7'
+	hyperfine -r 10 './newton  -t 10 -l 3000 7'
+	
 
 check: compile_O0
 	valgrind --leak-check=full --show-leak-kinds=all ./newton.exe
@@ -28,7 +42,7 @@ check_submission: check pack
 pack:newton
 	tar czf newton.tar.gz ./newton.exe ./Makefile ./newton.c 
 compile_O0:
-	$(CC) $(CFLAGS) ./newton.exe ./newton.c $(LIBS) $(OPT)
+	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) $(OPT)
 gdb:
 	$(CC) $(CFLAGS) ./newton_gdb.exe ./newton.c $(LIBS) -Og -ggdb
 
@@ -37,5 +51,5 @@ clean:
 	rm -f *.ppm
 	rm -rf ./pictures
 	rm -rf ./extracted
-	rm -f newton
-	rm -r *.tar.gz
+	rm -f ./newton
+	rm  *.tar.gz
