@@ -227,9 +227,6 @@ static void * writing_task ( void * args ) {
 						break;
 					}
 				}
-				if(j==LUT.n) {
-				j=0;
-				}
 				// TODO mapping function
 				sprintf(work_string,"%d %d %d " ,j, (j<<1)%(degree+2) , (j<<2)%(degree+2) );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
@@ -289,7 +286,7 @@ static void * computation_task(void * args ) {
 					attr=888;
 					break;
 				}
-				for ( int k=0; k<LUT.n-2 ;k++ ){
+				for ( int k=0; k<=LUT.n-2 ;k++ ){
 
 					if ( (cabs(x)-1)<=1e-3 &&  fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
 						attr=carg(x);
