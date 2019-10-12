@@ -28,7 +28,7 @@ typedef struct {
 
 static  roots LUT;
 const float PI=3.1415933;
-				// red 		green 	blue 
+// red 		green 	blue 
 const int  colour_table[3][3] = { {255,0,0} , {0,255,0} , {0,0,255} };
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
@@ -180,7 +180,6 @@ static void * writing_task ( void * args ) {
 	u_int8_t * result_c;
 	double  * result_a;
 	double const mt= 255.0/MAX_IT;
-	double const mt_c=255.0/(degree+2);
 	size_t j=0;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
@@ -226,15 +225,16 @@ static void * writing_task ( void * args ) {
 			for(int i=0;i<n_row_col;i++) {
 				// writing attracctors file
 				for( j=0;j<LUT.n; j++) {
-				if ( fabs(LUT.angles[j]-result_a[i])<1 ) {
-					break;
+					if ( fabs(LUT.angles[j]-result_a[i])<1 ) {
+						break;
+					}
 				}
-				}
+				// TODO mapping function
 				sprintf(work_string,"%d %d %d " ,(int) ((double)j/3)*colour_table[j%3][0],(int) ((double)j/3)*colour_table[j%3][1],(int) ((double)j/3)*colour_table[j%3][2]);
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
-				
+
 				// writing convergences file 
-				int local= (int) floor(mt*result_c[i]);
+				int local= (int) (mt*result_c[i]);
 				sprintf(work_string,"%d %d %d ",local,local,local   );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
 			}
@@ -288,15 +288,15 @@ static void * computation_task(void * args ) {
 					attr=888;
 					break;
 				}
-							for ( int k=0; k<LUT.n-2 ;k++ ){
-				    
+				for ( int k=0; k<LUT.n-2 ;k++ ){
+
 					if ( (cabs(x)-1)<=1e-3 &&  fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
 						attr=carg(x);
 						break;
 					}
 
 				}
-						if(attr!=0) {
+				if(attr!=0) {
 					break;
 				}	
 				// computing x_k+1
@@ -316,7 +316,7 @@ static void * computation_task(void * args ) {
 					attr=carg(x);	
 					break;
 				}
-		
+
 			}
 			// find a possible root
 			attractor[jx]=attr; // maping function for color

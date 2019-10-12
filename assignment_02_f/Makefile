@@ -5,15 +5,15 @@ LIBS= -pthread -lm
 
 .PHONY: all
 newton:
-	$(CC) $(CFLAGS) ./newton.exe ./newton.c $(LIBS) -O2
-all: compile
+	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) -O2
+all: newton
 	
 	./newton.exe -t 1 -l 10 5
 	./newton.exe -t 2 -l 37 5
 	./newton.exe -t 3 -l 1000 5
 	./newton.exe -t 4 -l 1000 5
 
-performance: compile
+performance: newton
 	hyperfine -r 10 './newton.exe -t 1 -l 10 1'
 	hyperfine -r 10 './newton.exe -t 2 -l 37 3'
 	hyperfine -r 10 './newton.exe -t 3 -l 1000 4'
@@ -35,3 +35,7 @@ gdb:
 clean:
 	rm -f *.exe
 	rm -f *.ppm
+	rm -rf ./pictures
+	rm -rf ./extracted
+	rm -f newton
+	rm -r *.tar.gz
