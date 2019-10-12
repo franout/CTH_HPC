@@ -202,7 +202,7 @@ static void * writing_task ( void * args ) {
 	}
 
 	// header of the files 
-	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col,n_row_col);
+	sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,degree+2);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
 	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col, n_row_col);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
@@ -228,7 +228,7 @@ static void * writing_task ( void * args ) {
 					}
 				}
 				// TODO mapping function
-				sprintf(work_string,"%d %d %d ",colour_table[j%3][0]*((int)( (255.00/(degree+2)))) ,colour_table[j%3][1]*((int)( (255.00/(degree+2)))),colour_table[j%3][2]*((int)( (255.00/(degree+2)))));
+				sprintf(work_string,"%d %d %d " ,(int)(colour_table[j%3][0]*((double)j/(degree+2))),(int)(colour_table[j%3][1]*((double)j/(degree+2))),(int)(colour_table[j%3][2]*((double)j/(degree+2))) );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
