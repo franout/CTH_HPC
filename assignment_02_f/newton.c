@@ -178,6 +178,8 @@ static void * writing_task ( void * args ) {
 	u_int8_t * result_c;
 	double  * result_a;
 	double const mt= 255.0/MAX_IT;
+	double const mt_c= 255.0/(degree+2);
+	
 	size_t j=0;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
@@ -228,7 +230,7 @@ static void * writing_task ( void * args ) {
 					}
 				}
 				// TODO mapping function
-				sprintf(work_string,"%d %d %d " ,j, (j<<1)%(degree+2) , (j>>2)%(degree) );
+				sprintf(work_string,"%d %d %d " ,colour_table[j%3][0] * j * mt_c,colour_table[j%3][1] * j * mt_c,colour_table[j%3][2] * j * mt_c  );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
