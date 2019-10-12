@@ -1,11 +1,11 @@
 CC= gcc
 CFLAGS= -Wall -o
-OPT= -O0
+OPT= -O2
 LIBS= -pthread -lm
 
 .PHONY: all
 newton: newton.c
-	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) -O2
+	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) $(OPT)
 all: newton
 	
 	./newton.exe -t 1 -l 10 5
@@ -33,15 +33,13 @@ performance: newton
 	hyperfine -r 10 './newton  -t 10 -l 3000 7'
 	
 
-check: compile_O0
+check: newton 
 	valgrind --leak-check=full --show-leak-kinds=all ./newton
 
 check_submission: check pack
 	/home/hpc2019/a2_grading/check_submission.py ./newton.tar.gz
 pack:newton
 	tar czf newton.tar.gz ./newton ./Makefile ./newton.c 
-compile_O0:
-	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) $(OPT)
 gdb:
 	$(CC) $(CFLAGS) ./newton_gdb.exe ./newton.c $(LIBS) -Og -ggdb
 

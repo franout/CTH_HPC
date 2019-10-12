@@ -264,9 +264,9 @@ static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
 	u_int8_t conv;
-	double complex x,y,z;
+	double complex x,y,z,old_x;
 	double  attr;
-	int j;
+	int j,k;
 	double step_local=step;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
@@ -290,19 +290,23 @@ static void * computation_task(void * args ) {
 					attr=888.00;
 					break;
 				}
-				for ( int k=0; k<=LUT.n-2 ;k++ ){
+				if(cabs(x)-1<=1e-3){
+				for (k=0; k<=LUT.n-2 ;k++ ){
 
-					if ( (cabs(x)-1)<=1e-3 &&  fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
+					if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
 						attr=fabs(carg(x));
 						break;
 					}
 
 				}
+
 				if(attr!=0) {
 					break;
 				}	
+				}
+			
 				// computing x_k+1
-				double complex old_x= x;
+				old_x= x;
 				y=x; // getting the current x
 				z=x;
 				for( j = 1; j < degree-1; j++) {
@@ -314,11 +318,11 @@ static void * computation_task(void * args ) {
 				j++;	
 				z=z*j; // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
-				x=x - ((double complex)y/z);
-				/*if ( cabs(x-old_x)<=1e-5) {
+				x=x - (y/z);
+				if ( cabs(x-old_x)<=1e-5) {
 					attr=fabs(carg(x));	
 					break;
-				}*/
+				}
 
 			}
 			// find a possible root
