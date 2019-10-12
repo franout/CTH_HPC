@@ -225,7 +225,7 @@ static void * writing_task ( void * args ) {
 			for(int i=0;i<n_row_col;i++) {
 				// writing attracctors file
 				for( j=0;j<LUT.n; j++) {
-					if ( fabs(LUT.angles[j]-result_a[i])<1e-3 ) {
+					if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
 						break;
 					}
 				}
