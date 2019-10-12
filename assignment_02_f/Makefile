@@ -4,7 +4,7 @@ OPT= -O0
 LIBS= -pthread -lm
 
 .PHONY: all
-newton:
+newton: newton.c
 	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) -O2
 all: newton
 	

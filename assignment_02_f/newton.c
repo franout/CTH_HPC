@@ -202,7 +202,7 @@ static void * writing_task ( void * args ) {
 	}
 
 	// header of the files 
-	sprintf(work_string,"P3\n%d %d\n%d\n",n_row_col,n_row_col,degree+2);
+	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col,n_row_col);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
 	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col, n_row_col);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
