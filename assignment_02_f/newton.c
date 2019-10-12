@@ -230,13 +230,12 @@ static void * writing_task ( void * args ) {
 						break;
 					}
 				}
-				// TODO mapping function
 				// b = int(max(0, 255*(1 - ratio)))
 				//     r = int(max(0, 255*(ratio - 1)))
 				//         g = 255 - b - r
 				
-
-				sprintf(work_string,"%d %d %d " ,7-1-j, (int) (1-(mt_c * j )) ,(int) ( (mt_c*j) ) );
+				double tmp= mt_c*j;
+				sprintf(work_string,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
@@ -246,19 +245,6 @@ static void * writing_task ( void * args ) {
 			}
 		}
 	}
-	printf("%d\n",LUT.n);
-for(int i=0;i<LUT.n; i++ ) {
-printf("%f.. \n",LUT.angles[i]);
-}
-
-	for(int j=0;j<1000;j++){
-	for(int k=0;k<1000;k++){
-	printf("%f " , attractors[j][k]);
-	}	
-	printf("\n");
-	}
-
-
 	free(work_string);
 	free(item_done_loc);
 
@@ -324,14 +310,15 @@ static void * computation_task(void * args ) {
 					z*=x;
 				}
 				y*=x;
-				y=y-1-0*I;	
-				z=z*degree; // multipling by d
+				y=y-1-0*I;
+				j++;	
+				z=z*j; // multipling by d
 				// y has x_k^d z has x_k^(d-1)*d
 				x=x - ((double complex)y/z);
-				if ( cabs(x-old_x)<=1e-5) {
+				/*if ( cabs(x-old_x)<=1e-5) {
 					attr=fabs(carg(x));	
 					break;
-				}
+				}*/
 
 			}
 			// find a possible root

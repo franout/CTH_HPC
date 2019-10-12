@@ -20,7 +20,6 @@ performance: newton
 	hyperfine -r 10 './newton -t 1 -l 1000 2'
 	hyperfine -r 10 './newton -t 1 -l 1000 5'	
 	hyperfine -r 10 './newton -t 1 -l 1000 7'
-	hyperfine -r 10 './newton -t 2 -l 37 3'
 	
 	
 	##multithreads
@@ -35,12 +34,12 @@ performance: newton
 	
 
 check: compile_O0
-	valgrind --leak-check=full --show-leak-kinds=all ./newton.exe
+	valgrind --leak-check=full --show-leak-kinds=all ./newton
 
 check_submission: check pack
 	/home/hpc2019/a2_grading/check_submission.py ./newton.tar.gz
 pack:newton
-	tar czf newton.tar.gz ./newton.exe ./Makefile ./newton.c 
+	tar czf newton.tar.gz ./newton ./Makefile ./newton.c 
 compile_O0:
 	$(CC) $(CFLAGS) ./newton ./newton.c $(LIBS) $(OPT)
 gdb:
