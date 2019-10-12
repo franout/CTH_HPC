@@ -281,16 +281,21 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) { 
-				if ( cabs(x)<= 1e-3){ // converging to zero
+				double x_re=creal(x);
+			       x_re=x_re*x_re;	
+				double x_im=cimag(x);
+				x_im=cimag(x);
+				double tmp= x_re+x_im;	
+				if ( tmp<= 1e-6){ // converging to zero
 					attr = 999.00; 
 					break;
 				}
-				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
+				if (x_re>=1000000000L || x_im >=10000000000L ) { // convergin o inf
 
 					attr=888.00;
 					break;
 				}
-				if(cabs(x)-1<=1e-3){
+				if(tmp-1<=1e-3){
 				for (k=0; k<=LUT.n-2 ;k++ ){
 
 					if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
