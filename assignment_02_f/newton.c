@@ -235,7 +235,7 @@ static void * writing_task ( void * args ) {
 				//         g = 255 - b - r
 				
 
-				sprintf(work_string,"%d %d %d " ,7-1-j, (int) (1-(mt_c * j )) ,(int) ( (mt_c*j) -1) );
+				sprintf(work_string,"%d %d %d " ,7-1-j, (int) (1-(mt_c * j )) ,(int) ( (mt_c*j) ) );
 				fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 
 				// writing convergences file 
