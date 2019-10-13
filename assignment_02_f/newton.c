@@ -8,7 +8,7 @@
 #include <math.h>
 #include <complex.h>
 #define MAX_IT 50
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 4096
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
  *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
  */ 
@@ -309,11 +309,10 @@ static void * computation_task(void * args ) {
 					break;
 				}
 				if(mod-1<=1e-3){
-					for (k=0; k<LUT.n-2 ;k++ ){
+					for (k=0; k<=LUT.n-2 ;k++ ){
 
 						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
 							attr=fabs(carg(x));
-							//attr=k;
 							break;
 						}
 
