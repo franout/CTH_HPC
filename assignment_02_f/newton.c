@@ -181,7 +181,7 @@ static void * writing_task ( void * args ) {
 	double  * result_a;
 	double const mt= 255.0/MAX_IT;
 	double const mt_c= 2/(degree+2-1);
-	int i,old_i;
+	int i,old_i,offset_str_conv,offset_str_attr;
 	size_t j=0;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
@@ -227,8 +227,8 @@ static void * writing_task ( void * args ) {
 			result_a=attractors[ix];
 
 			for(old_i=0;i<n_row_col; ) {
-				int offset_str_attr=0;
-				int offset_str_conv=0;
+				offset_str_attr=0;
+				offset_str_conv=0;
 				work_string[0]='\0';
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+1+12<BUFFER_SIZE && offset_str_conv+1+12<BUFFER_SIZE ;i++) {
@@ -254,7 +254,7 @@ static void * writing_task ( void * args ) {
 
 				fwrite(work_string_attr,sizeof(char),offset_str_attr,fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
-	
+
 			}
 
 			free(result_a);
@@ -281,7 +281,7 @@ static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
 	u_int8_t conv;
-	double complex x,y,z,old_x;
+	double complex x,y,old_x;
 	double  attr,x_re,x_im;
 	int j,k;
 	double step_local=step;
@@ -323,35 +323,14 @@ static void * computation_task(void * args ) {
 						break;
 					}	
 				}
-				/*
-				// computing x_k+1
-				old_x= x;
-				z=1;
-				if(degree==1) {
-					y=x-1-0*I;
-				}
-				else{
-					y=1; // getting the current x
-					for( j =0 ; j < degree-1; j++) {
-						y*=x;
-						z*=x;
-					}
-					y*=x;
-					y=y-1-0*I;
-					j++;	
-					z=z*j; // multipling by d
-					// y has x_k^d z has x_k^(d-1)*d 
-				}
-				x=x - (y/z); */
-
 				old_x=x;	
 				y=x;
 				for(j=0;j<degree-1;j++) {
-				y*=x;				
+					y*=x;				
 				}
 				j=j+2;
 				x=x*(1+0*I-1.00/j*(1+0*I+y));
-				
+
 				if ( x_re*x_re + x_im*x_im - creal(old_x)*creal(old_x)-cimag(old_x)*cimag(old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
