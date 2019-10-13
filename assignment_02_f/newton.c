@@ -90,7 +90,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating convergence vector pointer\n");
 		exit(-1);
 	}
-	item_done=(char *) calloc(n_row_col,sizeof(char));
+	item_done=(char *) malloc(sizeof(char)*n_row_col);
 	if(item_done==NULL) {
 		fprintf(stderr,"error  allocating global variable for data transfer\n");
 		exit(-1);
@@ -108,6 +108,11 @@ int main (int argc, char ** argv ) {
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
 
+
+	// initializing to all zero  item done and to null the pointer of results
+	for(i=0;i<n_row_col;i++){
+		item_done[i]=0;
+	}
 
 
 	/*creating computation thread*/
@@ -194,8 +199,8 @@ static void * writing_task ( void * args ) {
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
-	work_string=(char *) malloc ( sizeof(char)* (BUFFER_SIZE+1));
-	work_string_attr=(char *) malloc ( sizeof(char)* (BUFFER_SIZE+1));
+	work_string=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
+	work_string_attr=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
 	if(work_string==NULL || work_string_attr==NULL){
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
@@ -228,16 +233,16 @@ static void * writing_task ( void * args ) {
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
-				/*	for( j=0;j<LUT.n; j++) {
+					for( j=0;j<LUT.n; j++) {
 						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
 							break;
 						}
-					}*/
+					}
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
 
-					double tmp= mt_c*result_a[i];
+					double tmp= mt_c*j;
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 					// writing convergences file 
 					int local= (int) (mt*result_c[i]);
@@ -251,6 +256,9 @@ static void * writing_task ( void * args ) {
 				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
 
 			}
+			fwrite("\n",sizeof(char),1,fp_attr);
+			fwrite("\n",sizeof(char),1,fp_conv);
+
 			free(result_a);
 			free(result_c);
 		}
@@ -276,8 +284,7 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,old_x;
-	double  attr,x_re,x_im, mod;
-	const double div=1.00/degree;
+	double  attr,x_re,x_im,mod;
 	int j,k;
 	double step_local=step;
 	// for the row along y axe
@@ -293,22 +300,21 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-				mod=cabs(x);
-				if ( mod<= 1e-3){ // converging to zero
-					attr = degree+2-2; 
+
+				if ( cabs(x)<= 1e-3){ // converging to zero
+					attr = 999.00; 
 					break;
 				}
 				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
 
-					attr=degree+2-1;
+					attr=888.00;
 					break;
 				}
-				if(mod-1<=1e-3){
+				if(cabs(x)-1<=1e-3){
 					for (k=0; k<=LUT.n-2 ;k++ ){
 
 						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
-						//	attr=fabs(carg(x));
-						attr=k;
+							attr=fabs(carg(x));
 							break;
 						}
 
@@ -323,36 +329,39 @@ static void * computation_task(void * args ) {
 
 
 				// computing x_k+1
-				/*	old_x= x;
-					double complex z=1;
-					if(degree==1) {
-					y=x-1-0*I;
-					}
-					else{
-					y=1; // getting the current x
-					for( j =0 ; j < degree-1; j++) {
-					y*=x;
-					z*=x;
-					}
-					y*=x;
-					y=y-1-0*I;
-					j++;	
-					z=z*j; // multipling by d
-				// y has x_k^d z has x_k^(d-1)*d 
+			/*	old_x= x;
+				double complex z=1;
+				if(degree==1) {
+				y=x-1-0*I;
 				}
-				x=x - (y/z); 
+				else{
+					y=1; // getting the current x
+				for( j =0 ; j < degree-1; j++) {
+				y*=x;
+				 z*=x;
+				 }
+				 y*=x;
+				 y=y-1-0*I;
+				 j++;	
+				 z=z*j; // multipling by d
+				 // y has x_k^d z has x_k^(d-1)*d 
+				 }
+				 x=x - (y/z); 
 
 */
-				old_x=x;
-				// TODO handling degree 0	
-				y=1;
-				for(j=0;j<degree;j++) {
-					y*=x;		
-				} 
-				y=1.0/y;
-				x=x*(1+0*I+div*(-1-0*I+y));
 
-				if ( cabs(x-old_x)<=1e-3) {
+
+
+
+				old_x=x;	
+				y=x;
+				for(j=0;j<degree-1;j++) {
+					y*=x;				
+				}
+				j=j+2;
+				x=x*(1+0*I-1.00/j*(1+0*I-1.00/y));
+
+				if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
 				}
