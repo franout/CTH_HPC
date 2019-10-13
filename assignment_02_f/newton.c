@@ -256,9 +256,6 @@ static void * writing_task ( void * args ) {
 				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
 
 			}
-			fwrite("\n",sizeof(char),1,fp_attr);
-			fwrite("\n",sizeof(char),1,fp_conv);
-
 			free(result_a);
 			free(result_c);
 		}
@@ -284,9 +281,10 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,old_x;
-	double  attr,x_re,x_im,mod;
+	double  attr,x_re,x_im,mod,asc_step,phase;
 	int j,k;
-	double step_local=step;
+	const double step_local=step;
+	const double div=1.00/degree;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
 		double  * attractor=(double *) malloc(sizeof(double ) *n_row_col);
@@ -295,26 +293,30 @@ static void * computation_task(void * args ) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
 			exit(-1);	
 		}
+		asc_step=ix*step_local;
 		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
-			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
+			x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-
-				if ( cabs(x)<= 1e-3){ // converging to zero
+				mod=cabs(x);
+				x_re=creal(x);
+				x_im=cimag(x);
+				if ( mod<= 1e-3){ // converging to zero
 					attr = 999.00; 
 					break;
 				}
-				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
+				if ( x_re>=1000000000L || x_re<=-1000000000L ||x_im >=10000000000L || x_im<=-10000000000L ) { // convergin o inf
 
 					attr=888.00;
 					break;
 				}
-				if(cabs(x)-1<=1e-3){
+				if(mod-1<=1e-3){
+					phase=fabs(carg(x));
 					for (k=0; k<=LUT.n-2 ;k++ ){
-
-						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
-							attr=fabs(carg(x));
+				
+						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
+							attr=phase;
 							break;
 						}
 
@@ -354,12 +356,12 @@ static void * computation_task(void * args ) {
 
 
 				old_x=x;	
-				y=x;
-				for(j=0;j<degree-1;j++) {
+				y=1;
+				for(j=0;j<degree;j++) {
 					y*=x;				
 				}
-				j=j+2;
-				x=x*(1+0*I-1.00/j*(1+0*I-1.00/y));
+			
+				x=x*(1+0*I-div*(1+0*I-1.00/y));
 
 				if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
