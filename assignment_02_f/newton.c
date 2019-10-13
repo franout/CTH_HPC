@@ -343,7 +343,7 @@ static void * computation_task(void * args ) {
 				x=x - (y/z); 
 
 */
-				old_x=x;
+//				old_x=x;
 				// TODO handling degree 0	
 				y=1;
 				for(j=0;j<degree;j++) {
@@ -352,10 +352,10 @@ static void * computation_task(void * args ) {
 				y=1.0/y;
 				x=x*(1+0*I+div*(-1-0*I+y));
 
-			if ( cabs(x-old_x)<=1e-3) {
+/*			if ( cabs(x-old_x)<=1e-3) {
 					attr=0;
 					break;
-				}
+				}*/
 
 			}
 			// find a possible root
