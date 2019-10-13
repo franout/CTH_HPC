@@ -276,13 +276,13 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,old_x;
-	double attr,x_re,x_im, mod;
+	double  attr,x_re,x_im, mod;
 	const double div=1.00/degree;
 	int j,k;
 	double step_local=step;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
-		double  * attractor=(double  *) malloc(sizeof(double  ) *n_row_col);
+		double  * attractor=(double *) malloc(sizeof(double ) *n_row_col);
 		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
@@ -343,7 +343,7 @@ static void * computation_task(void * args ) {
 				x=x - (y/z); 
 
 */
-//				old_x=x;
+				old_x=x;
 				// TODO handling degree 0	
 				y=1;
 				for(j=0;j<degree;j++) {
@@ -352,10 +352,10 @@ static void * computation_task(void * args ) {
 				y=1.0/y;
 				x=x*(1+0*I+div*(-1-0*I+y));
 
-/*			if ( cabs(x-old_x)<=1e-3) {
-					attr=0;
+				if ( cabs(x-old_x)<=1e-3) {
+					attr=fabs(carg(x));	
 					break;
-				}*/
+				}
 
 			}
 			// find a possible root
