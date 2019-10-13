@@ -359,7 +359,7 @@ static void * computation_task(void * args ) {
 					y*=x;				
 				}
 				j=j+2;
-				x=x*(1+0*I-1.00/j*(1+0*I-y));
+				x=x*(1+0*I-1.00/j*(1+0*I-1.00/y));
 
 				if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
