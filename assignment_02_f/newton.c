@@ -329,37 +329,35 @@ static void * computation_task(void * args ) {
 
 
 				// computing x_k+1
-			/*	old_x= x;
-				double complex z=1;
-				if(degree==1) {
-				y=x-1-0*I;
-				}
-				else{
+				/*	old_x= x;
+					double complex z=1;
+					if(degree==1) {
+					y=x-1-0*I;
+					}
+					else{
 					y=1; // getting the current x
-				for( j =0 ; j < degree-1; j++) {
-				y*=x;
-				 z*=x;
-				 }
-				 y*=x;
-				 y=y-1-0*I;
-				 j++;	
-				 z=z*j; // multipling by d
-				 // y has x_k^d z has x_k^(d-1)*d 
-				 }
-				 x=x - (y/z); 
+					for( j =0 ; j < degree-1; j++) {
+					y*=x;
+					z*=x;
+					}
+					y*=x;
+					y=y-1-0*I;
+					j++;	
+					z=z*j; // multipling by d
+				// y has x_k^d z has x_k^(d-1)*d 
+				}
+				x=x - (y/z); 
 
 */
-
-
-
-
+ 
 				old_x=x;	
-				y=x;
-				for(j=0;j<degree-1;j++) {
-					y*=x;				
-				}
+				y=x;	
+			
+					for(j=0;j<(degree)/2;j++) {
+					y*=x;		
+				} 
 				j=j+2;
-				x=x*(1+0*I-1.00/j*(1+0*I-1.00/y));
+				x=x*(1+0*I-1.00/j*(1+0*I-(1.00+0*I/y)));
 
 				if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
