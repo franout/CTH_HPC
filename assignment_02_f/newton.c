@@ -8,7 +8,7 @@
 #include <math.h>
 #include <complex.h>
 #define MAX_IT 50
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
  *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
  */ 
@@ -28,7 +28,7 @@ typedef struct {
 } roots;
 
 static  roots LUT;
-const float TPI=6.28318;
+const float PI=3.1415933;
 // red 		green 	blue 
 const int  colour_table[3][3] = { {1,0,0} , {0,1,0} , {0,0,1} };
 /*mutex*/
@@ -76,8 +76,7 @@ int main (int argc, char ** argv ) {
 	sscanf(argv[argc-1],"%d",&degree);
 	step=4/((double)n_row_col);
 	sleep_timespec.tv_nsec=100000;
-	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);	
-	if(threads_computation==NULL){
+	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);	if(threads_computation==NULL){
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
@@ -91,7 +90,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating convergence vector pointer\n");
 		exit(-1);
 	}
-	item_done=(char *) calloc(n_row_col,sizeof(char));
+	item_done=(char *) malloc(sizeof(char)*n_row_col);
 	if(item_done==NULL) {
 		fprintf(stderr,"error  allocating global variable for data transfer\n");
 		exit(-1);
@@ -104,20 +103,25 @@ int main (int argc, char ** argv ) {
 
 	}
 	for(i=0;i<degree;i++){
-		LUT.angles[i]=((double)TPI)/degree*i;
+		LUT.angles[i]=((double)2*PI)/degree*i;
 	}
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
 
 
+	// initializing to all zero  item done and to null the pointer of results
+	for(i=0;i<n_row_col;i++){
+		item_done[i]=0;
+	}
+
 
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
-		if (args==NULL){
-			fprintf(stderr,"error allocating arguments for computation threads\n");
-			exit(-1);
-		}
+		/*if (args==NULL){
+		  fprintf(stderr,"error allocating arguments for computation threads\n");
+		  exit(-1);
+		  }*/
 		*args=i;
 		if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (void * )args ))) {
 			fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
@@ -175,7 +179,7 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	double  * result_a;
-	double  const mt= 255.0/MAX_IT;
+	double const mt= 255.0/MAX_IT;
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
 	size_t j=0;
@@ -221,11 +225,7 @@ static void * writing_task ( void * args ) {
 		for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
-					/*for( j=0;j<LUT.n; j++) {
-						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
-							break;
-						}
-					}*/
+
 			for(old_i=0;old_i<n_row_col; ) {
 				offset_str_attr=0;
 				offset_str_conv=0;
@@ -233,12 +233,16 @@ static void * writing_task ( void * args ) {
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
-				
+					for( j=0;j<LUT.n; j++) {
+						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
+							break;
+						}
+					}
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
 
-					double tmp= mt_c*result_a[i];
+					double tmp= mt_c*j;
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 					// writing convergences file 
 					int local= (int) (mt*result_c[i]);
@@ -276,13 +280,12 @@ static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
 	u_int8_t conv;
-	double complex x,y;
-	double  attr, mod,phase,x_re,x_im;
+	double complex x,y,old_x;
+	double  attr,x_re,x_im, mod;
 	const double div=1.00/degree;
 	int j,k;
-	const double step_local=step;
-	double asc_step;
-	// for the row long y axe
+	double step_local=step;
+	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
 		double  * attractor=(double *) malloc(sizeof(double ) *n_row_col);
 		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
@@ -291,30 +294,26 @@ static void * computation_task(void * args ) {
 			exit(-1);	
 		}
 		// for the column along x axe
-		asc_step=ix*step_local;
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
-			x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
+			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-				
-				x_re=creal(x);
-				x_im=cimag(x);
-			
-				mod=x_re*x_re +x_im*x_im;
-				if ( mod<= 1e-6){ // converging to zero
-					attr = LUT.n-2; //n-2
-					break;
-				}	
-				if (x_re>=1000000000L  || x_im >=10000000000L ||  x_re<=-1000000000L  || x_im <=-10000000000L  ) { // convergin o inf
-
-					attr=LUT.n-1;
+				mod=cabs(x);
+				if ( mod<= 1e-3){ // converging to zero
+					attr = 999.00; 
 					break;
 				}
-				if(mod-1<=1e-6){
-					phase=fabs(carg(x));
-					for (k=0; k<=LUT.n-2 ;k++ ){
-						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
-							attr=k;
+				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
+
+					attr=888.00;
+					break;
+				}
+				if(mod-1<=1e-3){
+					for (k=0; k<LUT.n-2 ;k++ ){
+
+						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
+							attr=fabs(carg(x));
+							//attr=k;
 							break;
 						}
 
@@ -324,6 +323,8 @@ static void * computation_task(void * args ) {
 						break;
 					}	
 				}
+
+
 
 
 				// computing x_k+1
@@ -347,22 +348,22 @@ static void * computation_task(void * args ) {
 				x=x - (y/z); 
 
 */
-				//old_x=x;
-					y=1;
-					for(j=0;j<degree;j++) {
-					y*=x;	
-					} 
+				old_x=x;
+				// TODO handling degree 0	
+				y=x;
+				for(j=0;j<degree-1;j++) {
+					y*=x;		
+				} 
+				y=1.0/y;
+				x=x*(1+0*I+mod*(-1-0*I+y));
 
-				y=1/y;
-
-
-				x=x*(1-div*(1-y));
-				/*	if ( cabs(x-old_x)<=1e-3) {
+				if ( cabs(x-old_x)<=1e-3) {
 					attr=fabs(carg(x));	
 					break;
-					}*/
+				}
 
 			}
+			// find a possible root
 			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
 		}
