@@ -310,7 +310,7 @@ static void * computation_task(void * args ) {
 					attr=888.00;
 					break;
 				}
-				if(sqrt(mod)-1<=1e-3){
+				if(mod-1<=1e-3){
 					phase=fabs(carg(x));
 					for (k=0; k<=LUT.n-2 ;k++ ){
 
