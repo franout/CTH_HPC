@@ -35,7 +35,7 @@ const int  colour_table[3][3] = { {1,0,0} , {0,1,0} , {0,0,1} };
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
 static char * item_done;
-static double ** attractors; // roots in which the function is evolving
+static int ** attractors; // roots in which the function is evolving
 static u_int8_t**  convergences; // # of iterations needed for the convergence to a root
 
 /*struct for passing argument to write threa*/
@@ -80,7 +80,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
-	attractors=(double  **) malloc(sizeof( double *)*n_row_col);
+	attractors=(int  **) malloc(sizeof( int *)*n_row_col);
 	if(attractors==NULL){
 		fprintf(stderr,"error allocating attractor vector pointer\n");
 		exit(-1);
@@ -173,7 +173,7 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	double  * result_a;
+	int  * result_a;
 	double const mt= 255.0/MAX_IT;
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
@@ -276,13 +276,13 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,old_x;
-	double  attr,x_re,x_im, mod;
+	double x_re,x_im, mod;
 	const double div=1.00/degree;
-	int j,k;
+	int j,k,attr;
 	double step_local=step;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
-		double  * attractor=(double *) malloc(sizeof(double ) *n_row_col);
+		int   * attractor=(int  *) malloc(sizeof(int  ) *n_row_col);
 		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
@@ -352,8 +352,8 @@ static void * computation_task(void * args ) {
 				y=1.0/y;
 				x=x*(1+0*I+div*(-1-0*I+y));
 
-				if ( cabs(x-old_x)<=1e-3) {
-					attr=fabs(carg(x));	
+			if ( cabs(x-old_x)<=1e-3) {
+					attr=0;
 					break;
 				}
 
