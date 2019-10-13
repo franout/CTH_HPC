@@ -230,7 +230,7 @@ static void * writing_task ( void * args ) {
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
 					for( j=0;j<LUT.n; j++) {
-						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
+						if ( LUT.angles[j]-result_a[i]<=1e-3 ) {
 							break;
 						}
 					}
@@ -311,10 +311,10 @@ static void * computation_task(void * args ) {
 					break;
 				}
 				if(mod-1<=1e-6){
-					phase=carg(x);
+					phase=fabs(carg(x));
 					for (k=0; k<=LUT.n-2 ;k++ ){
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
-							attr=phase;
+							attr=LUT.angles[k];
 							break;
 						}
 
