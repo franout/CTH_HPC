@@ -90,7 +90,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating convergence vector pointer\n");
 		exit(-1);
 	}
-	item_done=(char *) malloc(sizeof(char)*n_row_col);
+	item_done=(char *) calloc(n_row_col,sizeof(char));
 	if(item_done==NULL) {
 		fprintf(stderr,"error  allocating global variable for data transfer\n");
 		exit(-1);
@@ -109,12 +109,7 @@ int main (int argc, char ** argv ) {
 	LUT.angles[LUT.n -1]=888.00; // value for ing
 
 
-	// initializing to all zero  item done and to null the pointer of results
-	for(i=0;i<n_row_col;i++){
-		item_done[i]=0;
-	}
-
-
+	
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
@@ -303,12 +298,12 @@ static void * computation_task(void * args ) {
 				x_re=creal(x);
 				x_im=cimag(x);
 				if ( mod<= 1e-3){ // converging to zero
-					attr = LUT.n-2; 
+					attr = LUT.n-3; 
 					break;
 				}
 				if ( x_re>=1000000000L || x_re<=-1000000000L ||x_im >=10000000000L || x_im<=-10000000000L ) { // convergin o inf
 
-					attr=LUT.n-1;
+					attr=LUT.n-2;
 					break;
 				}
 				if(mod-1<=1e-3){
