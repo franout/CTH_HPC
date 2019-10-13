@@ -231,7 +231,7 @@ static void * writing_task ( void * args ) {
 				offset_str_conv=0;
 				work_string[0]='\0';
 				work_string_attr[0]='\0';
-				for( i=old_i; i<n_row_col && offset_str_attr+12<BUFFER_SIZE && offset_str_conv+12<BUFFER_SIZE ;i++) {
+				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
 					for( j=0;j<LUT.n; j++) {
 						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
