@@ -349,12 +349,12 @@ static void * computation_task(void * args ) {
 */
 				old_x=x;
 				// TODO handling degree 0	
-				y=x;
-				for(j=0;j<degree-1;j++) {
+				y=1;
+				for(j=0;j<degree;j++) {
 					y*=x;		
 				} 
 				y=1.0/y;
-				x=x*(1+0*I+mod*(-1-0*I+y));
+				x=x*(1+0*I+div*(-1-0*I+y));
 
 				if ( cabs(x-old_x)<=1e-3) {
 					attr=fabs(carg(x));	
