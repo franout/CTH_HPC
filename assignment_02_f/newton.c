@@ -35,7 +35,7 @@ const int  colour_table[3][3] = { {1,0,0} , {0,1,0} , {0,0,1} };
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
 static char * item_done;
-static double ** attractors; // roots in which the function is evolving
+static int ** attractors; // roots in which the function is evolving
 static u_int8_t**  convergences; // # of iterations needed for the convergence to a root
 
 /*struct for passing argument to write threa*/
@@ -80,7 +80,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
-	attractors=(double  **) malloc(sizeof( double *)*n_row_col);
+	attractors=(int   **) malloc(sizeof( int *)*n_row_col);
 	if(attractors==NULL){
 		fprintf(stderr,"error allocating attractor vector pointer\n");
 		exit(-1);
@@ -178,7 +178,7 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	double  * result_a;
+	int  * result_a;
 	double const mt= 255.0/MAX_IT;
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
@@ -233,16 +233,16 @@ static void * writing_task ( void * args ) {
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
-					for( j=0;j<LUT.n; j++) {
+					/*for( j=0;j<LUT.n; j++) {
 						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
 							break;
 						}
-					}
+					}*/
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
 
-					double tmp= mt_c*j;
+					double tmp= mt_c*result_a[i];
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 					// writing convergences file 
 					int local= (int) (mt*result_c[i]);
@@ -287,7 +287,7 @@ static void * computation_task(void * args ) {
 	const double div=1.00/degree;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
-		double  * attractor=(double *) malloc(sizeof(double ) *n_row_col);
+		int  * attractor=(int *) malloc(sizeof(int ) *n_row_col);
 		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
@@ -303,12 +303,12 @@ static void * computation_task(void * args ) {
 				x_re=creal(x);
 				x_im=cimag(x);
 				if ( mod<= 1e-3){ // converging to zero
-					attr = 999.00; 
+					attr = LUT.n-2; 
 					break;
 				}
 				if ( x_re>=1000000000L || x_re<=-1000000000L ||x_im >=10000000000L || x_im<=-10000000000L ) { // convergin o inf
 
-					attr=888.00;
+					attr=LUT.n-1;
 					break;
 				}
 				if(mod-1<=1e-3){
@@ -316,7 +316,7 @@ static void * computation_task(void * args ) {
 					for (k=0; k<=LUT.n-2 ;k++ ){
 				
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
-							attr=phase;
+							attr=k;
 							break;
 						}
 
@@ -354,20 +354,21 @@ static void * computation_task(void * args ) {
 
 
 
-
-				old_x=x;	
+	//			old_x=x;	
 				y=1;
 				for(j=0;j<degree;j++) {
 					y*=x;				
+
 				}
 			
-				x=x*(1+0*I-div*(1+0*I-1.00/y));
+				y=1.00/y;
+				x=x*(1+0*I-div*(1+0*I-y));
 
-				if ( cabs(x-old_x)<=1e-10) {
+		/*		if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
 				}
-
+*/
 			}
 			// find a possible root
 			attractor[jx]=attr; // maping function for color
