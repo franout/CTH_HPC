@@ -236,7 +236,7 @@ static void * writing_task ( void * args ) {
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
-
+//TODO use memcpy instead of stprint
 					double tmp= mt_c*result_a[i];
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 					// writing convergences file 
@@ -298,17 +298,17 @@ static void * computation_task(void * args ) {
 				x_re=creal(x);
 				x_im=cimag(x);
 				if ( mod<= 1e-3){ // converging to zero
-					attr = LUT.n-3; 
+					attr = LUT.n-2; 
 					break;
 				}
 				if ( x_re>=1000000000L || x_re<=-1000000000L ||x_im >=10000000000L || x_im<=-10000000000L ) { // convergin o inf
 
-					attr=LUT.n-2;
+					attr=LUT.n-1;
 					break;
 				}
 				if(mod-1<=1e-3){
 					phase=fabs(carg(x));
-					for (k=0; k<=LUT.n-2 ;k++ ){
+					for (k=0; k<LUT.n-2 ;k++ ){
 				
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
 							attr=k;
