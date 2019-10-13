@@ -238,7 +238,10 @@ static void * writing_task ( void * args ) {
 					//         g = 255 - b - r
 //TODO use memcpy instead of stprint
 					double tmp= mt_c*result_a[i];
-					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
+					int r= (int) (1-tmp>=0 ? 1- tmp:0 ); 
+					int b=(int)(tmp-1>=0? tmp -1 :0); 
+					int g=255 - r -b;
+					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,r,g,b);
 					// writing convergences file 
 					int local= (int) (mt*result_c[i]);
 					offset_str_conv+=sprintf(work_string+offset_str_conv,"%d %d %d ",local,local,local   );
