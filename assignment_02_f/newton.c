@@ -226,11 +226,11 @@ static void * writing_task ( void * args ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
 
-			for(old_i=0;i<n_row_col; ) {
+			for(old_i=0;old_i<n_row_col; ) {
 				offset_str_attr=0;
 				offset_str_conv=0;
-				work_string[0]='\0';
-				work_string_attr[0]='\0';
+				//				work_string[0]='\0';
+				//				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
 					for( j=0;j<LUT.n; j++) {
@@ -300,7 +300,7 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-			
+
 				if ( cabs(x)<= 1e-3){ // converging to zero
 					attr = 999.00; 
 					break;
@@ -324,6 +324,35 @@ static void * computation_task(void * args ) {
 						break;
 					}	
 				}
+
+
+
+
+				// computing x_k+1
+			/*	old_x= x;
+				double complex z=1;
+				if(degree==1) {
+				y=x-1-0*I;
+				}
+				else{
+					y=1; // getting the current x
+				for( j =0 ; j < degree-1; j++) {
+				y*=x;
+				 z*=x;
+				 }
+				 y*=x;
+				 y=y-1-0*I;
+				 j++;	
+				 z=z*j; // multipling by d
+				 // y has x_k^d z has x_k^(d-1)*d 
+				 }
+				 x=x - (y/z); 
+
+*/
+
+
+
+
 				old_x=x;	
 				y=x;
 				for(j=0;j<degree-1;j++) {
