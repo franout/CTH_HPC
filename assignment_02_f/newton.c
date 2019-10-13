@@ -231,7 +231,7 @@ static void * writing_task ( void * args ) {
 				offset_str_conv=0;
 				work_string[0]='\0';
 				work_string_attr[0]='\0';
-				for( i=old_i; i<n_row_col && offset_str_attr+1+12<BUFFER_SIZE && offset_str_conv+1+12<BUFFER_SIZE ;i++) {
+				for( i=old_i; i<n_row_col && offset_str_attr+12<BUFFER_SIZE && offset_str_conv+12<BUFFER_SIZE ;i++) {
 					// writing attracctors file
 					for( j=0;j<LUT.n; j++) {
 						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
@@ -282,7 +282,7 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,old_x;
-	double  attr,x_re,x_im;
+	double  attr,x_re,x_im,mod;
 	int j,k;
 	double step_local=step;
 	// for the row along y axe
@@ -300,7 +300,8 @@ static void * computation_task(void * args ) {
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
 				x_re=creal(x);
 				x_im=cimag(x);
-				if ( (x_re*x_re + x_im*x_im)<= 1e-6){ // converging to zero
+				mod=x_re*x_re+x_im*x_im;
+				if ( mod<= 1e-6){ // converging to zero
 					attr = 999.00; 
 					break;
 				}
@@ -309,7 +310,7 @@ static void * computation_task(void * args ) {
 					attr=888.00;
 					break;
 				}
-				if(cabs(x)-1<=1e-3){
+				if(sqrt(mod)-1<=1e-3){
 					for (k=0; k<=LUT.n-2 ;k++ ){
 
 						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
@@ -331,7 +332,7 @@ static void * computation_task(void * args ) {
 				j=j+2;
 				x=x*(1+0*I-1.00/j*(1+0*I+y));
 
-				if ( x_re*x_re + x_im*x_im - creal(old_x)*creal(old_x)-cimag(old_x)*cimag(old_x)<=1e-10) {
+				if ( mod- creal(old_x)*creal(old_x)-cimag(old_x)*cimag(old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
 				}
