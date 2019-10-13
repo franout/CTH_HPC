@@ -175,7 +175,7 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	double  * result_a;
-	int  const mt= 255.0/MAX_IT;
+	double  const mt= 255.0/MAX_IT;
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
 	size_t j=0;
