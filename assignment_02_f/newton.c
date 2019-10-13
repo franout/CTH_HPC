@@ -310,7 +310,7 @@ static void * computation_task(void * args ) {
 					attr=888.00;
 					break;
 				}
-				if(sqrt(mod)-1<=1e-3){
+				if(cabs(x)-1<=1e-3){
 					for (k=0; k<=LUT.n-2 ;k++ ){
 
 						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
@@ -332,7 +332,7 @@ static void * computation_task(void * args ) {
 				j=j+2;
 				x=x*(1+0*I-1.00/j*(1+0*I+y));
 
-				if ( mod- creal(old_x)*creal(old_x)-cimag(old_x)*cimag(old_x)<=1e-10) {
+				if ( x_re*x_re+x_im*x_im- creal(old_x)*creal(old_x)-cimag(old_x)*cimag(old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
 				}
