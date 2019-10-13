@@ -350,10 +350,11 @@ static void * computation_task(void * args ) {
 
 */
  
-				old_x=x;	
+				old_x=x;
+		 		// TODO handling degree 0	
 				y=x;	
 			
-					for(j=0;j<(degree)/2;j++) {
+					for(j=0;j<degree-1;j++) {
 					y*=x;		
 				} 
 				j=j+2;
