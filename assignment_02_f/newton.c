@@ -300,14 +300,12 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-				x_re=creal(x);
-				x_im=cimag(x);
-				mod=x_re*x_re+x_im*x_im;
-				if ( mod<= 1e-6){ // converging to zero
+			
+				if ( cabs(x)<= 1e-3){ // converging to zero
 					attr = 999.00; 
 					break;
 				}
-				if (fabs(x_re)>=1000000000L || fabs(x_im) >=10000000000L ) { // convergin o inf
+				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
 
 					attr=888.00;
 					break;
@@ -334,7 +332,7 @@ static void * computation_task(void * args ) {
 				j=j+2;
 				x=x*(1+0*I-1.00/j*(1+0*I+y));
 
-				if ( x_re*x_re+x_im*x_im- creal(old_x)*creal(old_x)-cimag(old_x)*cimag(old_x)<=1e-10) {
+				if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
 				}
