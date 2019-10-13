@@ -8,7 +8,7 @@
 #include <math.h>
 #include <complex.h>
 #define MAX_IT 50
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 2048
 /*Implement in C using POSIX threads a program called newton that computes similar pictures
  *  for a given functions f(x) = x^d - 1 for complex numbers with real and imaginary part between -2 and +2.
  */ 
@@ -199,8 +199,8 @@ static void * writing_task ( void * args ) {
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
-	work_string=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
-	work_string_attr=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
+	work_string=(char *) malloc ( sizeof(char)* (BUFFER_SIZE+1));
+	work_string_attr=(char *) malloc ( sizeof(char)* (BUFFER_SIZE+1));
 	if(work_string==NULL || work_string_attr==NULL){
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
@@ -256,9 +256,6 @@ static void * writing_task ( void * args ) {
 				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
 
 			}
-			fwrite("\n",sizeof(char),1,fp_attr);
-			fwrite("\n",sizeof(char),1,fp_conv);
-
 			free(result_a);
 			free(result_c);
 		}
@@ -284,7 +281,8 @@ static void * computation_task(void * args ) {
 	free(args);
 	u_int8_t conv;
 	double complex x,y,old_x;
-	double  attr,x_re,x_im,mod;
+	double  attr,x_re,x_im, mod;
+	const double div=1.00/degree;
 	int j,k;
 	double step_local=step;
 	// for the row along y axe
@@ -300,8 +298,8 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-ix*step_local);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-
-				if ( cabs(x)<= 1e-3){ // converging to zero
+				mod=cabs(x);
+				if ( mod<= 1e-3){ // converging to zero
 					attr = 999.00; 
 					break;
 				}
@@ -310,7 +308,7 @@ static void * computation_task(void * args ) {
 					attr=888.00;
 					break;
 				}
-				if(cabs(x)-1<=1e-3){
+				if(mod-1<=1e-3){
 					for (k=0; k<=LUT.n-2 ;k++ ){
 
 						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
@@ -349,18 +347,16 @@ static void * computation_task(void * args ) {
 				x=x - (y/z); 
 
 */
- 
 				old_x=x;
-		 		// TODO handling degree 0	
-				y=x;	
-			
-					for(j=0;j<degree-1;j++) {
+				// TODO handling degree 0	
+				y=x;
+				for(j=0;j<degree-1;j++) {
 					y*=x;		
 				} 
-				j=j+2;
-				x=x*(1+0*I-1.00/j*(1+0*I-((1.00+0*I)/y)));
+				y=1.0/y;
+				x=x*(1+0*I+mod*(-1-0*I+y));
 
-				if ( cabs(x-old_x)<=1e-10) {
+				if ( cabs(x-old_x)<=1e-3) {
 					attr=fabs(carg(x));	
 					break;
 				}
