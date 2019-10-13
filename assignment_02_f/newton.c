@@ -90,7 +90,7 @@ int main (int argc, char ** argv ) {
 		fprintf(stderr,"error allocating convergence vector pointer\n");
 		exit(-1);
 	}
-	item_done=(char *) malloc(sizeof(char)*n_row_col);
+	item_done=(char *) calloc(n_row_col,sizeof(char));
 	if(item_done==NULL) {
 		fprintf(stderr,"error  allocating global variable for data transfer\n");
 		exit(-1);
@@ -108,11 +108,6 @@ int main (int argc, char ** argv ) {
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
 
-
-	// initializing to all zero  item done and to null the pointer of results
-	for(i=0;i<n_row_col;i++){
-		item_done[i]=0;
-	}
 
 
 	/*creating computation thread*/
@@ -233,16 +228,16 @@ static void * writing_task ( void * args ) {
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
-					for( j=0;j<LUT.n; j++) {
+				/*	for( j=0;j<LUT.n; j++) {
 						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
 							break;
 						}
-					}
+					}*/
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
 
-					double tmp= mt_c*j;
+					double tmp= mt_c*result_a[i];
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 					// writing convergences file 
 					int local= (int) (mt*result_c[i]);
@@ -300,19 +295,20 @@ static void * computation_task(void * args ) {
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
 				mod=cabs(x);
 				if ( mod<= 1e-3){ // converging to zero
-					attr = 999.00; 
+					attr = degree+2-2; 
 					break;
 				}
 				if (fabs(creal(x))>=1000000000L || fabs(cimag(x)) >=10000000000L ) { // convergin o inf
 
-					attr=888.00;
+					attr=degree+2-1;
 					break;
 				}
 				if(mod-1<=1e-3){
 					for (k=0; k<=LUT.n-2 ;k++ ){
 
 						if (   fabs(LUT.angles[k]-fabs(carg(x)))<=1e-3  ) {
-							attr=fabs(carg(x));
+						//	attr=fabs(carg(x));
+						attr=k;
 							break;
 						}
 
