@@ -221,7 +221,11 @@ static void * writing_task ( void * args ) {
 		for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
-
+					/*for( j=0;j<LUT.n; j++) {
+						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
+							break;
+						}
+					}*/
 			for(old_i=0;old_i<n_row_col; ) {
 				offset_str_attr=0;
 				offset_str_conv=0;
@@ -229,16 +233,12 @@ static void * writing_task ( void * args ) {
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
-					for( j=0;j<LUT.n; j++) {
-						if ( LUT.angles[j]-result_a[i]<=1e-3 ) {
-							break;
-						}
-					}
+				
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
 
-					double tmp= mt_c*j;
+					double tmp= mt_c*result_a[i];
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,7-1-j, (int) (1-tmp) ,(int)tmp );
 					// writing convergences file 
 					int local= (int) (mt*result_c[i]);
@@ -302,19 +302,19 @@ static void * computation_task(void * args ) {
 			
 				mod=x_re*x_re +x_im*x_im;
 				if ( mod<= 1e-6){ // converging to zero
-					attr = 999.00; 
+					attr = LUT.n-2; //n-2
 					break;
 				}	
 				if (x_re>=1000000000L  || x_im >=10000000000L ||  x_re<=-1000000000L  || x_im <=-10000000000L  ) { // convergin o inf
 
-					attr=888.00;
+					attr=LUT.n-1;
 					break;
 				}
 				if(mod-1<=1e-6){
 					phase=fabs(carg(x));
 					for (k=0; k<=LUT.n-2 ;k++ ){
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
-							attr=LUT.angles[k];
+							attr=k;
 							break;
 						}
 
