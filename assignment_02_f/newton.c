@@ -256,6 +256,8 @@ static void * writing_task ( void * args ) {
 				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
 
 			}
+			fwrite("\n",sizeof(char),1,fp_attr);
+			fwrite("\n",sizeof(char),1,fp_conv);
 
 			free(result_a);
 			free(result_c);
