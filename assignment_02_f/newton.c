@@ -311,7 +311,7 @@ static void * computation_task(void * args ) {
 					break;
 				}
 				if(mod-1<=1e-6){
-					phase=fabs(carg(x));
+					phase=carg(x);
 					for (k=0; k<=LUT.n-2 ;k++ ){
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
 							attr=phase;
