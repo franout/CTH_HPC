@@ -300,8 +300,8 @@ static void * computation_task(void * args ) {
 				x_re=creal(x);
 				x_im=cimag(x);
 			
-				mod=cabs(x);
-				if ( mod<= 1e-3){ // converging to zero
+				mod=x_re*x_re +x_im*x_im;
+				if ( mod<= 1e-6){ // converging to zero
 					attr = 999.00; 
 					break;
 				}	
@@ -310,7 +310,7 @@ static void * computation_task(void * args ) {
 					attr=888.00;
 					break;
 				}
-				if(mod-1<=1e-3){
+				if(mod-1<=1e-6){
 					phase=fabs(carg(x));
 					for (k=0; k<=LUT.n-2 ;k++ ){
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
