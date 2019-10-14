@@ -173,7 +173,7 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	int  * result_a,* grey_scale;
+	int  * result_a,* grey_scale,*rgb_scale;
 	double  mt= 255.0/(MAX_IT);
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
@@ -197,10 +197,18 @@ static void * writing_task ( void * args ) {
 	exit(-1);
 	}
 	sum=0;
+	/*compute grey scale*/
 	for(j=0;j<MAX_IT;j++) {
 	grey_scale[j]=(int)sum;
 	sum+=mt;
 	}
+	rgb_scale=(int *) malloc(sizeof(int)*(degree+2));
+	if(rgb_scale==NULL) {
+	fprintf(stderr,"error allocating rgb scale\n");
+	exit(-1);	
+	}
+	/*compute rgb matrixt*/
+
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
@@ -362,7 +370,7 @@ static void * computation_task(void * args ) {
 
 
 
-	//			old_x=x;	
+			old_x=x;	
 				y=1;
 				for(j=0;j<degree;j++) {
 					y*=x;				
@@ -371,13 +379,12 @@ static void * computation_task(void * args ) {
 			
 				y=1.00/y;
 				x=x*(1+0*I-div*(1+0*I-y));
-
-		/*		if ( cabs(x-old_x)<=1e-10) {
+		if ( cabs(x-old_x)<=1e-10) {
 					attr=fabs(carg(x));	
 					break;
 				}
-*/
-			}
+
+}
 			// find a possible root
 			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
