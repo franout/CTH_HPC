@@ -211,15 +211,15 @@ static void * writing_task ( void * args ) {
 	sum = 0;
 	for(j=0;j<degree+2;j++) {
 		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
-		sprintf(rgb_scale[j],"%d %d %d ", (int)sum, (int)(255.00-sum),(int)( 100 + sum)%100);
+		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum)%100);
 		sum+=mt;
 		//printf("%s\n",rgb_scale[j]);	
 	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
-	work_string=(char *) malloc ( sizeof(char)* 12* n_row_col);
-	work_string_attr=(char *) malloc ( sizeof(char)* 12 * n_row_col);
+	work_string=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
+	work_string_attr=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
 	if(work_string==NULL || work_string_attr==NULL){
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
@@ -244,20 +244,24 @@ static void * writing_task ( void * args ) {
 		for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
+			for(old_i=0;old_i<n_row_col; ) {
 				offset_str=0;
-			for(i=0;i<n_row_col;i++){
-			
+				work_string[0]='\0';
+				work_string_attr[0]='\0';
+				for( i=old_i; i<n_row_col && offset_str+12+1<BUFFER_SIZE;i++) {
 					memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
-					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);
-					offset_str+=12;
-				}
-			  memcpy(work_string_attr+offset_str, "\n", 1);
-		              memcpy(work_string+offset_str, "\n", 1);	  
-
-				fwrite(work_string_attr,sizeof(char),offset_str,fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
+					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);	
+					offset_str+=12;	
+				}		
+				old_i=i;
+				memcpy(work_string_attr+offset_str, "\n", 1);
+			        memcpy(work_string+offset_str, "\n", 1);	
+				fwrite(work_string_attr,sizeof(char),offset_str,fp_attr);
 				fwrite(work_string,sizeof(char),offset_str,fp_conv);
 
-					free(result_a);
+			}
+
+			free(result_a);
 			free(result_c);
 		}
 	}
