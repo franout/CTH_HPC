@@ -109,7 +109,7 @@ int main (int argc, char ** argv ) {
 	LUT.angles[LUT.n -1]=888.00; // value for ing
 
 
-	
+
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
@@ -193,19 +193,19 @@ static void * writing_task ( void * args ) {
 	}
 	grey_scale=(int *) malloc ( sizeof(int)*MAX_IT);
 	if(grey_scale==NULL) {
-	fprintf(stderr,"error allocating grey scale\b");
-	exit(-1);
+		fprintf(stderr,"error allocating grey scale\b");
+		exit(-1);
 	}
 	sum=0;
 	/*compute grey scale*/
 	for(j=0;j<MAX_IT;j++) {
-	grey_scale[j]=(int)sum;
-	sum+=mt;
+		grey_scale[j]=(int)sum;
+		sum+=mt;
 	}
 	rgb_scale=(int *) malloc(sizeof(int)*(degree+2));
 	if(rgb_scale==NULL) {
-	fprintf(stderr,"error allocating rgb scale\n");
-	exit(-1);	
+		fprintf(stderr,"error allocating rgb scale\n");
+		exit(-1);	
 	}
 	/*compute rgb matrixt*/
 
@@ -247,15 +247,15 @@ static void * writing_task ( void * args ) {
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
 					/*for( j=0;j<LUT.n; j++) {
-						if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
-							break;
-						}
-					}*/
+					  if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
+					  break;
+					  }
+					  }*/
 					// b = int(max(0, 255*(1 - ratio)))
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
-//TODO use memcpy instead of stprint
-		
+					//TODO use memcpy instead of stprint
+
 					double tmp= mt_c*result_a[i];
 					int b= (int) (1-tmp>=0 ? 1- tmp:0 ); 
 					int r=(int)(tmp-1>=0? tmp -1 :0); 
@@ -331,7 +331,7 @@ static void * computation_task(void * args ) {
 				if(mod-1<=1e-3){
 					phase=fabs(carg(x));
 					for (k=0; k<LUT.n-2 ;k++ ){
-						if (   fabs(LUT.angles[k]-phase)<=1e-1  ) {
+						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
 							attr=k;
 							break;
 						}
@@ -347,44 +347,44 @@ static void * computation_task(void * args ) {
 
 
 				// computing x_k+1
-			/*	old_x= x;
-				double complex z=1;
-				if(degree==1) {
-				y=x-1-0*I;
-				}
-				else{
+				/*	old_x= x;
+					double complex z=1;
+					if(degree==1) {
+					y=x-1-0*I;
+					}
+					else{
 					y=1; // getting the current x
-				for( j =0 ; j < degree-1; j++) {
-				y*=x;
-				 z*=x;
-				 }
-				 y*=x;
-				 y=y-1-0*I;
-				 j++;	
-				 z=z*j; // multipling by d
-				 // y has x_k^d z has x_k^(d-1)*d 
-				 }
-				 x=x - (y/z); 
+					for( j =0 ; j < degree-1; j++) {
+					y*=x;
+					z*=x;
+					}
+					y*=x;
+					y=y-1-0*I;
+					j++;	
+					z=z*j; // multipling by d
+				// y has x_k^d z has x_k^(d-1)*d 
+				}
+				x=x - (y/z); 
 
 */
 
 
 
-		//	old_x=x;	
 				y=1;
 				for(j=0;j<degree;j++) {
 					y*=x;				
 
 				}
-			
+				old_x=x;	
+
 				y=1.00/y;
 				x=x*(1+0*I-div*(1+0*I-y));
-		/*if ( cabs(x-old_x)<=1e-5) {
-					attr=fabs(carg(x));	
+				if ( cabs(x-old_x)<=1e-5) {
+					attr=LUT.n-2;	
 					break;
-				}*/
+				}
 
-}
+			}
 			// find a possible root
 			attractor[jx]=attr; // maping function for color
 			convergence[jx]=conv; // mapping function for tocolo
