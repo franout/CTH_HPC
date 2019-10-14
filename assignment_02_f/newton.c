@@ -75,12 +75,12 @@ int main (int argc, char ** argv ) {
 	sscanf(argv[argc-1],"%d",&degree);
 	step=4/((double)n_row_col);
 	if (  degree==1 ) {
-	sleep_timespec.tv_nsec=8000000000; }
+	sleep_timespec.tv_nsec=75e8; }
 	else if(degree==2) {
-	sleep_timespec.tv_nsec=1000000000;
+	sleep_timespec.tv_nsec=65e8;
 	}
 	else {
-	sleep_timespec.tv_nsec=100000;
+	sleep_timespec.tv_nsec=1e5;
 	}
 	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
 	if(threads_computation==NULL){
