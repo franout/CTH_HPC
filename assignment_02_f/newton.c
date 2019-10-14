@@ -207,7 +207,7 @@ static void * writing_task ( void * args ) {
 		exit(-1);	
 	}
 	/*compute rgb matrixt*/
-	mt=255.0/((degree+2)*3);
+	mt=255.0/((degree+2));
 	sum = 0;
 	for(j=0;j<degree+2;j++) {
 		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
@@ -218,8 +218,8 @@ static void * writing_task ( void * args ) {
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
-	work_string=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
-	work_string_attr=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
+	work_string=(char *) malloc ( sizeof(char)* 12* n_row_col);
+	work_string_attr=(char *) malloc ( sizeof(char)* 12 * n_row_col);
 	if(work_string==NULL || work_string_attr==NULL){
 		fprintf(stderr,"error allocating working string\n");
 		exit(-1);
@@ -244,50 +244,33 @@ static void * writing_task ( void * args ) {
 		for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
-
-			for(old_i=0;old_i<n_row_col; ) {
 				offset_str=0;
-				work_string[0]='\0';
-				work_string_attr[0]='\0';
-				for( i=old_i; i<n_row_col && offset_str+12+1<BUFFER_SIZE;i++) {
-					// writing attracctors file
-					//TODO use memcpy instead of stprint
-
-				/*	offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,rgb_scale[result_a[i]][0],rgb_scale[result_a[i]][1],rgb_scale[result_a[i]][2]);
-					// writing convergences file 
-					int local= grey_scale[result_c[i]];
-					offset_str_conv+=sprintf(work_string+offset_str_conv,"%d %d %d ",local,local,local   );
-				*/	
+			for(i=0;i<n_row_col;i++){
+			
 					memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
 					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);
 					offset_str+=12;
 				}
-				old_i=i;
+			  memcpy(work_string_attr+offset_str, "\n", 1);
+		              memcpy(work_string+offset_str, "\n", 1);	  
 
 				fwrite(work_string_attr,sizeof(char),offset_str,fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
 				fwrite(work_string,sizeof(char),offset_str,fp_conv);
 
-			}
-
-			/* //prepare string for this line
-			 *         for (size_t j = 0; j < nmb_lines; j++)
-			 *               {
-			 *                  memcpy(buffer_attr + j * 6, colors[res_attr[j]], 6);
-			 *                 memcpy(buffer_conv + j * 12, greys[res_conv[j]], 12);
-			 *                                  }
-			 *                                                           memcpy(buffer_attr + nmb_lines * 6, "\n", 1);
-			 *                                                                                            memcpy(buffer_conv + nmb_lines * 12, "\n", 1);
-			 *
-			 *                                                                                                        fwrite(buffer_attr, sizeof(char), sizeof(buffer_attr), attr_file);
-			 *                                                                                                                    fwrite(buffer_conv, sizeof(char), sizeof(buffer_conv), conv_file);*/
-			free(result_a);
+					free(result_a);
 			free(result_c);
 		}
 	}
 	free(work_string);
 	free(work_string_attr);
 	free(item_done_loc);
+	for(j=0;j<MAX_IT+1;j++) {
+		free(	grey_scale[j]);	}
 	free(grey_scale);
+	for(j=0;j<degree+2;j++) {
+		free(rgb_scale[j]);
+	}
+	free(rgb_scale);
 	fclose(fp_conv);
 	fclose(fp_attr);
 	if(fp_attr==NULL || fp_conv==NULL){
