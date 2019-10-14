@@ -171,9 +171,10 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	int  * result_a,* grey_scale,**rgb_scale;
+	int  * result_a;
+	char ** grey_scale,**rgb_scale;
 	double  mt= 255.0/(MAX_IT);
-	int i,old_i,offset_str_conv,offset_str_attr;
+	int i,old_i,offset_str;
 	size_t j=0;
 	double sum ;
 	FILE * fp_attr, *fp_conv;
@@ -188,32 +189,31 @@ static void * writing_task ( void * args ) {
 		fprintf(stderr,"error opening convergences file\n");
 		exit(-1);
 	}
-	grey_scale=(int *) malloc ( sizeof(int)*MAX_IT);
+	grey_scale=(char **) malloc ( sizeof(char*)*(MAX_IT+1));
 	if(grey_scale==NULL) {
 		fprintf(stderr,"error allocating grey scale\b");
 		exit(-1);
 	}
 	sum=0;
 	/*compute grey scale*/
-	for(j=0;j<MAX_IT;j++) {
-		grey_scale[j]=(int)sum;
+	for(j=0;j<MAX_IT+1;j++) {
+		grey_scale[j]=(char *)malloc(sizeof(char)*12);
+		sprintf(grey_scale[j],"%d %d %d " , (int)sum,(int) sum , (int)sum);
 		sum+=mt;
 	}
-	rgb_scale=(int **) malloc(sizeof(int *)*(degree+2));
+	rgb_scale=(char **) malloc(sizeof(char  *)*(degree+2));
 	if(rgb_scale==NULL) {
 		fprintf(stderr,"error allocating rgb scale\n");
 		exit(-1);	
 	}
 	/*compute rgb matrixt*/
-	mt=255.0/(degree+2);
+	mt=255.0/((degree+2)*3);
 	sum = 0;
 	for(j=0;j<degree+2;j++) {
-		rgb_scale[j]=(int *) malloc(sizeof(int)*3);
-		rgb_scale[j][0]=(int)sum;
-		rgb_scale[j][1]=(int)(100.00-sum)%255;
-		rgb_scale[j][2]=(int)( 100 + sum)%255;
+		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
+		sprintf(rgb_scale[j],"%d %d %d ", (int)sum, (int)(255.00-sum),(int)( 100 + sum)%255);
 		sum+=mt;
-//		printf("%d %d %d\n",rgb_scale[j][0],rgb_scale[j][1], rgb_scale[j][2]);	
+		//printf("%s\n",rgb_scale[j]);	
 	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
@@ -246,28 +246,28 @@ static void * writing_task ( void * args ) {
 			result_a=attractors[ix];
 
 			for(old_i=0;old_i<n_row_col; ) {
-				offset_str_attr=0;
-				offset_str_conv=0;
+				offset_str=0;
 				work_string[0]='\0';
 				work_string_attr[0]='\0';
-				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
+				for( i=old_i; i<n_row_col && offset_str+12+1<BUFFER_SIZE;i++) {
 					// writing attracctors file
 					//TODO use memcpy instead of stprint
 
-					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,rgb_scale[result_a[i]][0],rgb_scale[result_a[i]][1],rgb_scale[result_a[i]][2]);
+				/*	offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,rgb_scale[result_a[i]][0],rgb_scale[result_a[i]][1],rgb_scale[result_a[i]][2]);
 					// writing convergences file 
 					int local= grey_scale[result_c[i]];
 					offset_str_conv+=sprintf(work_string+offset_str_conv,"%d %d %d ",local,local,local   );
-
-
+				*/	
+					memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
+					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);
+					offset_str+=12;
 				}
 				old_i=i;
 
-				fwrite(work_string_attr,sizeof(char),offset_str_attr,fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
-				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
+				fwrite(work_string_attr,sizeof(char),offset_str,fp_attr);	 // check here for performance later --- maybe bad because of parsing of the elements.
+				fwrite(work_string,sizeof(char),offset_str,fp_conv);
 
 			}
-
 
 			/* //prepare string for this line
 			 *         for (size_t j = 0; j < nmb_lines; j++)
