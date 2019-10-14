@@ -21,7 +21,7 @@ static void * writing_task(void * args);
 static int N_THREAD,n_row_col, degree;
 static double step;
 static struct timespec sleep_timespec;
-
+static char ** grey_scale , ** rgb_scale;
 typedef struct {
 	double * angles;
 	size_t n;
@@ -47,9 +47,10 @@ int main (int argc, char ** argv ) {
 
 	pthread_t *threads_computation,thread_WR;
 	write_args write_t_args ;
-	int i,ret;
+	int i,j,ret;
 	int option=0;
-
+	double  mt =255.0/(MAX_IT);
+	double sum=0;
 	/*it returns the parsed char and as third arg it requires the separation char for arguments*/
 	while ((option = getopt(argc,argv,"t:l:"))!=-1) {
 
@@ -73,11 +74,44 @@ int main (int argc, char ** argv ) {
 
 	sscanf(argv[argc-1],"%d",&degree);
 	step=4/((double)n_row_col);
+	if (  degree==1 ) {
+	sleep_timespec.tv_nsec=8000000000; }
+	else if(degree==2) {
+	sleep_timespec.tv_nsec=1000000000;
+	}
+	else {
 	sleep_timespec.tv_nsec=100000;
+	}
 	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
 	if(threads_computation==NULL){
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
+	}
+	grey_scale=(char **) malloc ( sizeof(char*)*(MAX_IT+1));
+	if(grey_scale==NULL) {
+		fprintf(stderr,"error allocating grey scale\b");
+		exit(-1);
+	}
+	sum=0;
+	//compute grey scale
+	for(j=0;j<MAX_IT+1;j++) {
+		grey_scale[j]=(char *)malloc(sizeof(char)*12);
+		sprintf(grey_scale[j],"%d %d %d " , (int)sum,(int) sum , (int)sum);
+		sum+=mt;
+	}
+	rgb_scale=(char **) malloc(sizeof(char  *)*(degree+2));
+	mt=255.0/((degree+2));
+
+	if(rgb_scale==NULL) {
+		fprintf(stderr,"error allocating rgb scale\n");
+		exit(-1);	
+	}
+	/*compute rgb matrixt*/
+	sum = 0;
+	for(j=0;j<degree+2;j++) {
+		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
+		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum));
+		sum+=mt;
 	}
 	attractors=(int   **) malloc(sizeof( int *)*n_row_col);
 	if(attractors==NULL){
@@ -122,7 +156,6 @@ int main (int argc, char ** argv ) {
 			exit(1);
 		}
 	}
-
 	write_t_args.attractors_file=(char *) malloc ( sizeof(char) *30);
 	write_t_args.convergences_file=(char *) malloc(sizeof(char)*30);
 	if(write_t_args.convergences_file==NULL || write_t_args.attractors_file==NULL){
@@ -133,7 +166,7 @@ int main (int argc, char ** argv ) {
 	sprintf(write_t_args.attractors_file,"./newton_attractors_x%d.ppm",degree);
 
 	/*creating writing thread*/
-	if ((ret = pthread_create(&thread_WR, NULL, writing_task,(void *)(&write_t_args) ))) {
+	if ( (ret = pthread_create(&thread_WR, NULL, writing_task,(void *)(&write_t_args) ))) {
 		fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
 		exit(1);
 	}
@@ -155,7 +188,13 @@ int main (int argc, char ** argv ) {
 	}
 
 
-
+	for(j=0;j<MAX_IT+1;j++) {
+		free(	grey_scale[j]);	}
+	free(grey_scale); 
+	for(j=0;j<degree+2;j++) {
+		free(rgb_scale[j]);
+	}
+	free(rgb_scale);
 	free(item_done);
 	free(threads_computation);
 	free(convergences);
@@ -173,12 +212,7 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	int  * result_a;
-	char ** grey_scale;
-	char **rgb_scale;
-	double  mt =255.0/(MAX_IT);
 	int i,old_i,offset_str;
-	size_t j=0;
-	double sum ;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
 	fp_attr= fopen(files_local->attractors_file,"w");
@@ -191,34 +225,7 @@ static void * writing_task ( void * args ) {
 		fprintf(stderr,"error opening convergences file\n");
 		exit(-1);
 	}
-	grey_scale=(char **) malloc ( sizeof(char*)*(MAX_IT+1));
-	if(grey_scale==NULL) {
-		fprintf(stderr,"error allocating grey scale\b");
-		exit(-1);
-	}
-	sum=0;
-	//compute grey scale
-	for(j=0;j<MAX_IT+1;j++) {
-		grey_scale[j]=(char *)malloc(sizeof(char)*12);
-		sprintf(grey_scale[j],"%d %d %d " , (int)sum,(int) sum , (int)sum);
-		sum+=mt;
-	}
-	rgb_scale=(char **) malloc(sizeof(char  *)*(degree+2));
-	mt=255.0/((degree+2));
 
-	if(rgb_scale==NULL) {
-		fprintf(stderr,"error allocating rgb scale\n");
-		exit(-1);	
-	}
-	/*compute rgb matrixt*/
-	sum = 0;
-	for(j=0;j<degree+2;j++) {
-		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
-		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum));
-		sum+=mt;
-	}
-	free(files_local->convergences_file);
-	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
 	work_string=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
 	work_string_attr=(char *) malloc ( sizeof(char)* BUFFER_SIZE);
@@ -232,6 +239,9 @@ static void * writing_task ( void * args ) {
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_attr);	
 	sprintf(work_string,"P3\n%d %d\n255\n",n_row_col, n_row_col);
 	fwrite(work_string,sizeof(char),strlen(work_string),fp_conv);
+
+	free(files_local->convergences_file);
+	free(files_local->attractors_file);
 	for ( size_t ix = 0; ix < n_row_col; ) {
 		//revisit loop structure for performance improvements later
 		pthread_mutex_lock(&item_done_mutex);
@@ -246,16 +256,18 @@ static void * writing_task ( void * args ) {
 		for ( ; ix < n_row_col && item_done_loc[ix] != 0; ++ix ) {
 			result_c=convergences[ix];
 			result_a=attractors[ix];
-			for(old_i=0;old_i<n_row_col; ) {
+		for(old_i=0;old_i<n_row_col; ) {
 				offset_str=0;
 				//	work_string[0]='\0';
 				//	work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str+12+1<BUFFER_SIZE;i++) {
-					memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
+			
+		 			memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
 					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);	
-					offset_str+=12;	
-				}		
-				old_i=i;
+					 
+					 
+									offset_str+=12;	
+				}						old_i=i;
 				memcpy(work_string_attr+offset_str, "\n", 1);
 				memcpy(work_string+offset_str, "\n", 1);	
 				fwrite(work_string_attr,sizeof(char),offset_str,fp_attr);
@@ -263,20 +275,14 @@ static void * writing_task ( void * args ) {
 
 			}
 
-			free(result_a);
-			free(result_c);
+		free(result_a);
+		free(result_c);
 		}
 	}
 	free(work_string);
 	free(work_string_attr);
 	free(item_done_loc);
-	for(j=0;j<MAX_IT+1;j++) {
-		free(	grey_scale[j]);	}
-	free(grey_scale); 
-	for(j=0;j<degree+2;j++) {
-		free(rgb_scale[j]);
-	}
-	free(rgb_scale);
+
 	fclose(fp_conv);
 	fclose(fp_attr);
 	if(fp_attr==NULL || fp_conv==NULL){
@@ -310,7 +316,10 @@ static void * computation_task(void * args ) {
 
 		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col ; jx++ ){
-
+			if(degree==1) {
+			attr=1;
+			conv=0;
+			}	{
 			old_x=x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
@@ -318,19 +327,6 @@ static void * computation_task(void * args ) {
 				x_re=creal(x);
 				x_im=cimag(x);
 				mod = x_re*x_re +x_im*x_im;
-				if ( mod - old_x<=1e-10) {
-					attr=LUT.n-2;	
-					break;
-				}
-				if ( mod<= 1e-3){ // converging to zero
-					attr = LUT.n-2; 
-					break;
-				}
-				if ( x_re>=1000000000L || x_re<=-1000000000L ||x_im >=10000000000L || x_im<=-10000000000L ) { // convergin o inf
-
-					attr=LUT.n-1;
-					break;
-				}
 				if(mod<=1+1e-3){
 					phase=fabs(carg(x));	
 					for (k=0; k<LUT.n-2 ;k++ ){
@@ -343,11 +339,24 @@ static void * computation_task(void * args ) {
 					if(attr!=0) {
 						break;
 					}	
+				}if ( mod - old_x<=1e-10) {
+					attr=LUT.n-2;	
+					break;
 				}
+				if ( mod<= 1e-3){ // converging to zero
+					attr = LUT.n-2; 
+					break;
+				}
+				if ( x_re>=1000000000L || x_re<=-1000000000L ||x_im >=10000000000L || x_im<=-10000000000L ) { // convergin o inf
+
+					attr=LUT.n-1;
+					break;
+				}
+				
 				// computing x_k+1
 				y=1;
 				// computing x^d
-				for(j=0;j<degree && degree>2;j++) {
+				for(j=0;j<degree && degree>1;j++) {
 					y*=x;
 				}
 				old_x=creal(x);
@@ -359,9 +368,9 @@ static void * computation_task(void * args ) {
 				x=x*(1+0*I-div*(1+0*I-y)); 
 				old_x=old_x+x_im;
 			}
-
-			attractor[jx]=attr; 
+				attractor[jx]=attr; 
 			convergence[jx]=conv;
+		}
 		}
 		nanosleep(&sleep_timespec, NULL);
 		pthread_mutex_lock(&item_done_mutex);
