@@ -39,7 +39,7 @@ check: newton
 check_submission: check pack
 	/home/hpc2019/a2_grading/check_submission.py ./newton.tar.gz
 pack:newton
-	tar czf newton.tar.gz ./newton ./Makefile ./newton.c 
+	tar czf newton.tar.gz  ./Makefile ./newton.c 
 gdb:
 	$(CC) $(CFLAGS) ./newton_gdb.exe ./newton.c $(LIBS) -Og -ggdb
 
@@ -49,4 +49,4 @@ clean:
 	rm -rf ./pictures
 	rm -rf ./extracted
 	rm -f ./newton
-	rm  *.tar.gz
+

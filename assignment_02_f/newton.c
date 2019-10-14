@@ -104,12 +104,10 @@ int main (int argc, char ** argv ) {
 	LUT.angles[0]=0.00;
 	for(i=1;i<degree;i++){
 		LUT.angles[i]=((double)TPI)/degree*i;
-	
+
 	}
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
-
-
 
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
@@ -216,7 +214,7 @@ static void * writing_task ( void * args ) {
 	sum = 0;
 	for(j=0;j<degree+2;j++) {
 		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
-		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum)%100);
+		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum));
 		sum+=mt;
 	}
 	free(files_local->convergences_file);
@@ -250,8 +248,8 @@ static void * writing_task ( void * args ) {
 			result_a=attractors[ix];
 			for(old_i=0;old_i<n_row_col; ) {
 				offset_str=0;
-			//	work_string[0]='\0';
-			//	work_string_attr[0]='\0';
+				//	work_string[0]='\0';
+				//	work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str+12+1<BUFFER_SIZE;i++) {
 					memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
 					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);	
@@ -303,17 +301,18 @@ static void * computation_task(void * args ) {
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
 		asc_step=ix*step_local;
-		int  * attractor=(int *) malloc(sizeof(int ) *n_row_col);
-		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
+		int  * attractor=(int *) calloc(n_row_col ,sizeof(int ));
+		u_int8_t  * convergence=(u_int8_t* ) calloc(n_row_col,sizeof(u_int8_t) );
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
 			exit(-1);	
 		}
 
 		// for the column along x axe
-		for(size_t jx=0 ;jx<n_row_col; jx++ ){
+		for(size_t jx=0 ;jx<n_row_col ; jx++ ){
+
 			old_x=x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
-		
+
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
 				//	mod=cabs(x);
 				x_re=creal(x);
@@ -346,20 +345,21 @@ static void * computation_task(void * args ) {
 					}	
 				}
 				// computing x_k+1
-				old_x=creal(x);
 				y=1;
-				old_x*=old_x;
 				// computing x^d
-				for(j=0;j<degree;j++) {
-						y*=x;
-					}
-					y=1.00/y;
-				x=x*(1+0*I-div*(1+0*I-y)); 
-			
+				for(j=0;j<degree && degree>2;j++) {
+					y*=x;
+				}
+				old_x=creal(x);
+				old_x*=old_x;
+
 				x_im=cimag(x);
 				x_im*=x_im;
+				y=1.00/y;
+				x=x*(1+0*I-div*(1+0*I-y)); 
 				old_x=old_x+x_im;
 			}
+
 			attractor[jx]=attr; 
 			convergence[jx]=conv;
 		}
