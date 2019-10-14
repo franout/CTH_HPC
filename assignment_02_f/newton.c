@@ -29,8 +29,6 @@ typedef struct {
 
 static  roots LUT;
 const float PI=3.1415933;
-// red 		green 	blue 
-const int  colour_table[3][3] = { {1,0,0} , {0,1,0} , {0,0,1} };
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
@@ -173,9 +171,8 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	int  * result_a,* grey_scale,*rgb_scale;
+	int  * result_a,* grey_scale,**rgb_scale;
 	double  mt= 255.0/(MAX_IT);
-	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
 	size_t j=0;
 	double sum ;
@@ -202,13 +199,21 @@ static void * writing_task ( void * args ) {
 		grey_scale[j]=(int)sum;
 		sum+=mt;
 	}
-	rgb_scale=(int *) malloc(sizeof(int)*(degree+2));
+	rgb_scale=(int **) malloc(sizeof(int *)*(degree+2));
 	if(rgb_scale==NULL) {
 		fprintf(stderr,"error allocating rgb scale\n");
 		exit(-1);	
 	}
 	/*compute rgb matrixt*/
-
+	mt=255.0/(degree+2);
+	sum = 0;
+	for(j=0;j<degree+2;j++) {
+		rgb_scale[j]=(int *) malloc(sizeof(int)*3);
+		rgb_scale[j][0]=(int)sum;
+		rgb_scale[j][1]=(int)(255.00-sum);
+		rgb_scale[j][2]=(int)( 127.5 + sum)%255;
+		sum+=mt;	
+	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
@@ -246,21 +251,9 @@ static void * writing_task ( void * args ) {
 				work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str_attr+10<BUFFER_SIZE && offset_str_conv+10<BUFFER_SIZE ;i++) {
 					// writing attracctors file
-					/*for( j=0;j<LUT.n; j++) {
-					  if ( fabs(LUT.angles[j]-result_a[i])<=1e-3 ) {
-					  break;
-					  }
-					  }*/
-					// b = int(max(0, 255*(1 - ratio)))
-					//     r = int(max(0, 255*(ratio - 1)))
-					//         g = 255 - b - r
 					//TODO use memcpy instead of stprint
 
-					double tmp= mt_c*result_a[i];
-					int b= (int) (1-tmp>=0 ? 1- tmp:0 ); 
-					int r=(int)(tmp-1>=0? tmp -1 :0); 
-					int g=255 - r -b;
-					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,r,g,b);
+					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,rgb_scale[result_a[i]][0],rgb_scale[result_a[i]][1],rgb_scale[result_a[i]][2]);
 					// writing convergences file 
 					int local= grey_scale[result_c[i]];
 					offset_str_conv+=sprintf(work_string+offset_str_conv,"%d %d %d ",local,local,local   );
@@ -273,6 +266,19 @@ static void * writing_task ( void * args ) {
 				fwrite(work_string,sizeof(char),offset_str_conv,fp_conv);
 
 			}
+
+
+			/* //prepare string for this line
+			 *         for (size_t j = 0; j < nmb_lines; j++)
+			 *               {
+			 *                  memcpy(buffer_attr + j * 6, colors[res_attr[j]], 6);
+			 *                 memcpy(buffer_conv + j * 12, greys[res_conv[j]], 12);
+			 *                                  }
+			 *                                                           memcpy(buffer_attr + nmb_lines * 6, "\n", 1);
+			 *                                                                                            memcpy(buffer_conv + nmb_lines * 12, "\n", 1);
+			 *
+			 *                                                                                                        fwrite(buffer_attr, sizeof(char), sizeof(buffer_attr), attr_file);
+			 *                                                                                                                    fwrite(buffer_conv, sizeof(char), sizeof(buffer_conv), conv_file);*/
 			free(result_a);
 			free(result_c);
 		}
@@ -343,33 +349,7 @@ static void * computation_task(void * args ) {
 					}	
 				}
 
-
-
-
 				// computing x_k+1
-				/*	old_x= x;
-					double complex z=1;
-					if(degree==1) {
-					y=x-1-0*I;
-					}
-					else{
-					y=1; // getting the current x
-					for( j =0 ; j < degree-1; j++) {
-					y*=x;
-					z*=x;
-					}
-					y*=x;
-					y=y-1-0*I;
-					j++;	
-					z=z*j; // multipling by d
-				// y has x_k^d z has x_k^(d-1)*d 
-				}
-				x=x - (y/z); 
-
-*/
-
-
-
 				y=1;
 				for(j=0;j<degree;j++) {
 					y*=x;				
