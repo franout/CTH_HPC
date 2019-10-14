@@ -211,7 +211,7 @@ static void * writing_task ( void * args ) {
 	sum = 0;
 	for(j=0;j<degree+2;j++) {
 		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
-		sprintf(rgb_scale[j],"%d %d %d ", (int)sum, (int)(255.00-sum),(int)( 100 + sum)%255);
+		sprintf(rgb_scale[j],"%d %d %d ", (int)sum, (int)(255.00-sum),(int)( 100 + sum)%100);
 		sum+=mt;
 		//printf("%s\n",rgb_scale[j]);	
 	}
