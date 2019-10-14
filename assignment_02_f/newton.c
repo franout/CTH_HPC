@@ -28,7 +28,7 @@ typedef struct {
 } roots;
 
 static  roots LUT;
-const float PI=3.1415933;
+const float TPI=6.293;
 /*mutex*/
 static pthread_mutex_t item_done_mutex;
 /*variables for data transfer*/
@@ -101,7 +101,7 @@ int main (int argc, char ** argv ) {
 
 	}
 	for(i=0;i<degree;i++){
-		LUT.angles[i]=((double)2*PI)/degree*i;
+		LUT.angles[i]=((double)TPI)/degree*i;
 	}
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
@@ -111,10 +111,10 @@ int main (int argc, char ** argv ) {
 	/*creating computation thread*/
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
-		/*if (args==NULL){
+		if (args==NULL){
 		  fprintf(stderr,"error allocating arguments for computation threads\n");
 		  exit(-1);
-		  }*/
+		  }
 		*args=i;
 		if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (void * )args ))) {
 			fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
@@ -172,8 +172,9 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	int  * result_a;
-	char ** grey_scale,**rgb_scale;
-	double  mt= 255.0/(MAX_IT);
+	char ** grey_scale;
+	char **rgb_scale;
+	double  mt =255.0/(MAX_IT);
 	int i,old_i,offset_str;
 	size_t j=0;
 	double sum ;
@@ -195,17 +196,19 @@ static void * writing_task ( void * args ) {
 		exit(-1);
 	}
 	sum=0;
-	/*compute grey scale*/
+	//compute grey scale
 	for(j=0;j<MAX_IT+1;j++) {
 		grey_scale[j]=(char *)malloc(sizeof(char)*12);
 		sprintf(grey_scale[j],"%d %d %d " , (int)sum,(int) sum , (int)sum);
 		sum+=mt;
+		//printf("%s\n",grey_scale[j]);
 	}
 	rgb_scale=(char **) malloc(sizeof(char  *)*(degree+2));
 	if(rgb_scale==NULL) {
 		fprintf(stderr,"error allocating rgb scale\n");
 		exit(-1);	
 	}
+//	printf("\n\n");
 	/*compute rgb matrixt*/
 	mt=255.0/((degree+2));
 	sum = 0;
@@ -213,7 +216,7 @@ static void * writing_task ( void * args ) {
 		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
 		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum)%100);
 		sum+=mt;
-		//printf("%s\n",rgb_scale[j]);	
+	//	printf("%s\n",rgb_scale[j]);	
 	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
@@ -270,7 +273,7 @@ static void * writing_task ( void * args ) {
 	free(item_done_loc);
 	for(j=0;j<MAX_IT+1;j++) {
 		free(	grey_scale[j]);	}
-	free(grey_scale);
+	free(grey_scale); 
 	for(j=0;j<degree+2;j++) {
 		free(rgb_scale[j]);
 	}
@@ -291,8 +294,8 @@ static void * computation_task(void * args ) {
 	size_t offset=*((size_t *)args);
 	free(args);
 	u_int8_t conv;
-	double complex x,y,old_x;
-	double  attr,x_re,x_im,mod,asc_step,phase;
+	double complex x,y;
+	double  attr,x_re,x_im,mod,asc_step,phase,old_x;
 	int j,k;
 	const double step_local=step;
 	const double div=1.00/degree;
@@ -310,9 +313,10 @@ static void * computation_task(void * args ) {
 			x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
 
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-				mod=cabs(x);
+			//	mod=cabs(x);
 				x_re=creal(x);
 				x_im=cimag(x);
+				mod = x_re*x_re +x_im*x_im;
 				if ( mod<= 1e-3){ // converging to zero
 					attr = LUT.n-2; 
 					break;
@@ -322,7 +326,7 @@ static void * computation_task(void * args ) {
 					attr=LUT.n-1;
 					break;
 				}
-				if(mod-1<=1e-3){
+				if(mod<=1+1e-3){
 					phase=fabs(carg(x));
 					for (k=0; k<LUT.n-2 ;k++ ){
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
@@ -343,11 +347,14 @@ static void * computation_task(void * args ) {
 					y*=x;				
 
 				}
-				old_x=x;	
-
+				old_x=creal(x);
+				old_x*=old_x;
 				y=1.00/y;
+				x_im=cimag(x);
+				x_im*=x_im;
+				old_x=old_x+x_im;	
 				x=x*(1+0*I-div*(1+0*I-y));
-				if ( cabs(x-old_x)<=1e-5) {
+				if ( mod - old_x<=1e-10) {
 					attr=LUT.n-2;	
 					break;
 				}
