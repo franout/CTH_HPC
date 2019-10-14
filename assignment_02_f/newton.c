@@ -210,9 +210,10 @@ static void * writing_task ( void * args ) {
 	for(j=0;j<degree+2;j++) {
 		rgb_scale[j]=(int *) malloc(sizeof(int)*3);
 		rgb_scale[j][0]=(int)sum;
-		rgb_scale[j][1]=(int)(255.00-sum);
-		rgb_scale[j][2]=(int)( 127.5 + sum)%255;
-		sum+=mt;	
+		rgb_scale[j][1]=(int)(100.00-sum)%255;
+		rgb_scale[j][2]=(int)( 100 + sum)%255;
+		sum+=mt;
+//		printf("%d %d %d\n",rgb_scale[j][0],rgb_scale[j][1], rgb_scale[j][2]);	
 	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
