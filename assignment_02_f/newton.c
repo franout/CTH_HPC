@@ -331,7 +331,7 @@ static void * computation_task(void * args ) {
 				if(mod-1<=1e-3){
 					phase=fabs(carg(x));
 					for (k=0; k<LUT.n-2 ;k++ ){
-						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
+						if (   fabs(LUT.angles[k]-phase)<=1e-2  ) {
 							attr=k;
 							break;
 						}
@@ -370,7 +370,7 @@ static void * computation_task(void * args ) {
 
 
 
-			old_x=x;	
+		//	old_x=x;	
 				y=1;
 				for(j=0;j<degree;j++) {
 					y*=x;				
@@ -379,10 +379,10 @@ static void * computation_task(void * args ) {
 			
 				y=1.00/y;
 				x=x*(1+0*I-div*(1+0*I-y));
-		if ( cabs(x-old_x)<=1e-10) {
+		/*if ( cabs(x-old_x)<=1e-5) {
 					attr=fabs(carg(x));	
 					break;
-				}
+				}*/
 
 }
 			// find a possible root
