@@ -74,7 +74,8 @@ int main (int argc, char ** argv ) {
 	sscanf(argv[argc-1],"%d",&degree);
 	step=4/((double)n_row_col);
 	sleep_timespec.tv_nsec=100000;
-	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);	if(threads_computation==NULL){
+	threads_computation=(pthread_t *) malloc(sizeof(pthread_t)*N_THREAD);
+	if(threads_computation==NULL){
 		fprintf(stderr,"error allocating threads' array\n");
 		exit(-1);
 	}
@@ -100,8 +101,10 @@ int main (int argc, char ** argv ) {
 		exit(-1);
 
 	}
-	for(i=0;i<degree;i++){
+	LUT.angles[0]=0.00;
+	for(i=1;i<degree;i++){
 		LUT.angles[i]=((double)TPI)/degree*i;
+	
 	}
 	LUT.angles[LUT.n-2]=999.00; // value for 0
 	LUT.angles[LUT.n -1]=888.00; // value for ing
@@ -112,9 +115,9 @@ int main (int argc, char ** argv ) {
 	for ( i =0;i< N_THREAD;i++) {
 		size_t *args = malloc(sizeof(size_t));
 		if (args==NULL){
-		  fprintf(stderr,"error allocating arguments for computation threads\n");
-		  exit(-1);
-		  }
+			fprintf(stderr,"error allocating arguments for computation threads\n");
+			exit(-1);
+		}
 		*args=i;
 		if ((ret = pthread_create(&(threads_computation[i]), NULL,  computation_task, (void * )args ))) {
 			fprintf(stderr,"Error %d creating thread: %d \n", ret,i);
@@ -201,22 +204,20 @@ static void * writing_task ( void * args ) {
 		grey_scale[j]=(char *)malloc(sizeof(char)*12);
 		sprintf(grey_scale[j],"%d %d %d " , (int)sum,(int) sum , (int)sum);
 		sum+=mt;
-		//printf("%s\n",grey_scale[j]);
 	}
 	rgb_scale=(char **) malloc(sizeof(char  *)*(degree+2));
+	mt=255.0/((degree+2));
+
 	if(rgb_scale==NULL) {
 		fprintf(stderr,"error allocating rgb scale\n");
 		exit(-1);	
 	}
-//	printf("\n\n");
 	/*compute rgb matrixt*/
-	mt=255.0/((degree+2));
 	sum = 0;
 	for(j=0;j<degree+2;j++) {
 		rgb_scale[j]=(char *) malloc(sizeof(char)*12);
 		sprintf(rgb_scale[j],"%d %d %d ", (int)(255.00-sum),(int)sum,(int)( 100 + sum)%100);
 		sum+=mt;
-	//	printf("%s\n",rgb_scale[j]);	
 	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
@@ -249,8 +250,8 @@ static void * writing_task ( void * args ) {
 			result_a=attractors[ix];
 			for(old_i=0;old_i<n_row_col; ) {
 				offset_str=0;
-				work_string[0]='\0';
-				work_string_attr[0]='\0';
+			//	work_string[0]='\0';
+			//	work_string_attr[0]='\0';
 				for( i=old_i; i<n_row_col && offset_str+12+1<BUFFER_SIZE;i++) {
 					memcpy(work_string_attr+offset_str,rgb_scale[result_a[i]] ,12);
 					memcpy(work_string+offset_str,grey_scale[result_c[i]], 12);	
@@ -258,7 +259,7 @@ static void * writing_task ( void * args ) {
 				}		
 				old_i=i;
 				memcpy(work_string_attr+offset_str, "\n", 1);
-			        memcpy(work_string+offset_str, "\n", 1);	
+				memcpy(work_string+offset_str, "\n", 1);	
 				fwrite(work_string_attr,sizeof(char),offset_str,fp_attr);
 				fwrite(work_string,sizeof(char),offset_str,fp_conv);
 
@@ -301,22 +302,27 @@ static void * computation_task(void * args ) {
 	const double div=1.00/degree;
 	// for the row along y axe
 	for (size_t ix = offset; ix <n_row_col; ix += N_THREAD ) {
+		asc_step=ix*step_local;
 		int  * attractor=(int *) malloc(sizeof(int ) *n_row_col);
 		u_int8_t  * convergence=(u_int8_t* ) malloc(sizeof(u_int8_t) *n_row_col);
 		if( attractor==NULL || convergence==NULL) {
 			fprintf(stderr,"error allocating rows in the computation thread\n");
 			exit(-1);	
 		}
-		asc_step=ix*step_local;
+
 		// for the column along x axe
 		for(size_t jx=0 ;jx<n_row_col; jx++ ){
-			x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
-
+			old_x=x=(-2+jx*step_local)+I*(2-asc_step);  // initial point
+		
 			for ( conv = 0, attr =0;conv<MAX_IT ; ++conv ) {
-			//	mod=cabs(x);
+				//	mod=cabs(x);
 				x_re=creal(x);
 				x_im=cimag(x);
 				mod = x_re*x_re +x_im*x_im;
+				if ( mod - old_x<=1e-10) {
+					attr=LUT.n-2;	
+					break;
+				}
 				if ( mod<= 1e-3){ // converging to zero
 					attr = LUT.n-2; 
 					break;
@@ -327,42 +333,35 @@ static void * computation_task(void * args ) {
 					break;
 				}
 				if(mod<=1+1e-3){
-					phase=fabs(carg(x));
+					phase=fabs(carg(x));	
 					for (k=0; k<LUT.n-2 ;k++ ){
-						if (   LUT.angles[k]-phase<=1e-3 ||   LUT.angles[k]-phase>=1e-3 ) {
+						if (   LUT.angles[k]-phase<=1e-3 || LUT.angles[k]-phase>=-1e-3 ) {
 							attr=k;
 							break;
 						}
-
 					}
 
 					if(attr!=0) {
 						break;
 					}	
 				}
-
 				// computing x_k+1
-				y=1;
-				for(j=0;j<degree;j++) {
-					y*=x;				
-
-				}
 				old_x=creal(x);
+				y=1;
 				old_x*=old_x;
-				y=1.00/y;
+				// computing x^d
+				for(j=0;j<degree;j++) {
+						y*=x;
+					}
+					y=1.00/y;
+				x=x*(1+0*I-div*(1+0*I-y)); 
+			
 				x_im=cimag(x);
 				x_im*=x_im;
-				old_x=old_x+x_im;	
-				x=x*(1+0*I-div*(1+0*I-y));
-				if ( mod - old_x<=1e-10) {
-					attr=LUT.n-2;	
-					break;
-				}
-
+				old_x=old_x+x_im;
 			}
-			// find a possible root
-			attractor[jx]=attr; // maping function for color
-			convergence[jx]=conv; // mapping function for tocolo
+			attractor[jx]=attr; 
+			convergence[jx]=conv;
 		}
 		nanosleep(&sleep_timespec, NULL);
 		pthread_mutex_lock(&item_done_mutex);
