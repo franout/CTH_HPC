@@ -173,11 +173,12 @@ static void * writing_task ( void * args ) {
 
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
-	int  * result_a;
-	double const mt= 255.0/(MAX_IT-1);
+	int  * result_a,* grey_scale;
+	double  mt= 255.0/(MAX_IT);
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
 	size_t j=0;
+	double sum ;
 	FILE * fp_attr, *fp_conv;
 	write_args * files_local=(write_args *) args;
 	fp_attr= fopen(files_local->attractors_file,"w");
@@ -190,7 +191,16 @@ static void * writing_task ( void * args ) {
 		fprintf(stderr,"error opening convergences file\n");
 		exit(-1);
 	}
-
+	grey_scale=(int *) malloc ( sizeof(int)*MAX_IT);
+	if(grey_scale==NULL) {
+	fprintf(stderr,"error allocating grey scale\b");
+	exit(-1);
+	}
+	sum=0;
+	for(j=0;j<MAX_IT;j++) {
+	grey_scale[j]=(int)sum;
+	sum+=mt;
+	}
 	free(files_local->convergences_file);
 	free(files_local->attractors_file);
 	// depending on the degree we will have d roots plus two special roots ( 0 and inf )
@@ -244,7 +254,7 @@ static void * writing_task ( void * args ) {
 					int g=255 - r -b;
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,r,g,b);
 					// writing convergences file 
-					int local= (int) (mt*result_c[i]);
+					int local= grey_scale[result_c[i]];
 					offset_str_conv+=sprintf(work_string+offset_str_conv,"%d %d %d ",local,local,local   );
 
 
@@ -262,7 +272,7 @@ static void * writing_task ( void * args ) {
 	free(work_string);
 	free(work_string_attr);
 	free(item_done_loc);
-
+	free(grey_scale);
 	fclose(fp_conv);
 	fclose(fp_attr);
 	if(fp_attr==NULL || fp_conv==NULL){
@@ -313,7 +323,6 @@ static void * computation_task(void * args ) {
 				if(mod-1<=1e-3){
 					phase=fabs(carg(x));
 					for (k=0; k<LUT.n-2 ;k++ ){
-				
 						if (   fabs(LUT.angles[k]-phase)<=1e-3  ) {
 							attr=k;
 							break;
