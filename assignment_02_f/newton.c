@@ -174,7 +174,7 @@ static void * writing_task ( void * args ) {
 	/*they are just poitners to the row which have to write*/
 	u_int8_t * result_c;
 	int  * result_a;
-	double const mt= 255.0/MAX_IT;
+	double const mt= 255.0/(MAX_IT-1);
 	double const mt_c= 2/(degree+2-1);
 	int i,old_i,offset_str_conv,offset_str_attr;
 	size_t j=0;
@@ -237,9 +237,10 @@ static void * writing_task ( void * args ) {
 					//     r = int(max(0, 255*(ratio - 1)))
 					//         g = 255 - b - r
 //TODO use memcpy instead of stprint
+		
 					double tmp= mt_c*result_a[i];
-					int r= (int) (1-tmp>=0 ? 1- tmp:0 ); 
-					int b=(int)(tmp-1>=0? tmp -1 :0); 
+					int b= (int) (1-tmp>=0 ? 1- tmp:0 ); 
+					int r=(int)(tmp-1>=0? tmp -1 :0); 
 					int g=255 - r -b;
 					offset_str_attr+=sprintf(work_string_attr+offset_str_attr,"%d %d %d " ,r,g,b);
 					// writing convergences file 
