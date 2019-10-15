@@ -4,12 +4,12 @@ OPT= -O2
 LIBS=-fopenmp -lm 
 
 .PHONY: all
-compile: cell_distances.c
+cell_distances: cell_distances.c
 	$(CC) $(CFLAGS) ./cell_distances ./cell_distances.c $(LIBS) $(OPT)
-all: compile
+all: 
 	$(CC) $(CFLAGS) ./newton_gdb.exe ./newton.c $(LIBS) -Og -ggdb
 
-execute:compile
+execute:cell_distances
 	./cell_distances -t 3
 
 performace: 
@@ -47,11 +47,12 @@ performace:
 	hyperfine -r 10 './cell_distances -t 5'
 	hyperfine -r 10 './cell_distances -t 10'
 	hyperfine -r 10 './cell_distances -t 20'
-test: compile pack
+test:  pack
 	/home/hpc2019/a3_grading/check_submission.py cell_distances.tar.gz
-pack: compile
+pack: cell_distances
 	tar czf cell_distances.tar.gz ./cell_distances.exe ./cell_distances.c
-
+check_memory: cell_distances
+	valgrind --leak-check=full --show-leak-kinds=all ./cell_distances
 clean:
 	rm -f *.exe
 

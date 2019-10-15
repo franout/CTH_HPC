@@ -1,41 +1,40 @@
-/*Implement a program in C, called cell_distances, that uses OpenMP for parallelization and that:
-
-  Reads coordinates of cells from a text file “cells” in the current working directory.
-  Computes the distances between cells counting how often each distance rounded to 2 decimal places occurs.
-  Outputs to stdout a sorted list of distances with associated frequencies (including 0 fequencies at your will).
-
-
-  Distances are symmetric, i.e. distance between two cells c_1 and c_2 and the distance in reverse direction c_2 to c_1 should be counted once.*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h> 
 #include <unistd.h>
+#include <fcntl.h>
 #include <math.h>
+#include <string.h>
 #define INPUT_FILE "./coordinates.txt"
+#define ROW_L 24 // length of row  + \n
+#define BUFFER_SIZE 2048 
+
+/*ordered linked list definition */
+typedef struct node * node_p;
+
+struct node {
+	int occ;
+	char value[5+1]; // length of string + \0
+	node_p next;
+};
 
 
-typedef struct {
-int * table_occ;
-char ** value;
-int n;
-} hash_map;
+// function for free memory 
+static void free_list(node_p  element) ;
 
+static void add_to_list(node_p  head, double value);
 
-static hash_map MAP;
-
-
-typedef struct {
-char row[25]; // supposing points between -10 and 10 with a fixed format (sign)yy.xxx 
-} POINT_t;
 
 
 int main (int argc , char ** argv ) {
-	POINT_t point, point2;
+
 	int N_THREAD=0;
 	int option=0;
 	FILE * fp,*fp_1;
-	float x1,x2,y1,y2,z1,z2,dist_local;
-
+	double dist,x1,x2,y1,y2,z1,z2;
+	char work_string[ROW_L-1],work_string_2[ROW_L-1];
+	node_p head=NULL;
+	node_p x;
 	/*it returns the parsed char and as third arg it requires the separation char for arguments*/
 	while ((option = getopt(argc,argv,"t:"))!=-1) {
 
@@ -58,27 +57,47 @@ int main (int argc , char ** argv ) {
 		fprintf(stderr,"errror opening the file\n");
 		exit(-1);
 	}
-	
 
-	while ( fread(point.row,sizeof(char),24,fp)>0) {
-		sscanf(point.row,"%f %f %f\n",&x1,&y1,&z1);
-#pragma omp task shared(x1,y1,z1, dist_local)
-		fread(point2.row,sizeof(char),24,fp);
-		sscanf(point2.row,"%f %f %f\n",&x2,&y2,&z2);
-		dist_local =sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
-#pragma omp taskwait 
-	printf("%f\n", dist_local);
-	
+	int i=1;
+	fseek(fp_1,i*ROW_L+1,SEEK_CUR);
+
+	while ((fread( work_string,sizeof(char), ROW_L,fp ))>0) {	
+		sscanf(work_string,"%lf %lf %lf\n",&x1,&y1,&z1);
+				int j=1;
+		/*while(fread(work_string_2,sizeof(char),ROW_L+1,fp_1)>0) {
+			//TODO we are eating chars somoewhere
+			sscanf(work_string_2,"%lf %lf %lf\n",&x1,&y2,&z2);
+			dist=sqrt(pow(x2-x1 ,2)+pow(y2-y1,2)+pow(z2-z1,2));
+		//	add_to_list(head,dist);
+			printf("courple %s %s\n", work_string,work_string_2);
+		j++;
+		}
+*/
+				printf("%s\n",work_string);
+		fseek(fp_1,-ROW_L*j+i*ROW_L , SEEK_CUR);
+		i++;
 	}
-	
+
+
 	// fashion way 
-//	float a = 37.777779;
-//
-//	int b = a; // b = 37    
-//	float c = a - b; // c = 0.777779   
-//	c *= 100; // c = 77.777863   
-//	int d = c; // d = 77;    
-//	a = b + d / (float)100; // a = 37.770000;
+	//	float a = 37.777779;
+	//
+	//	int b = a; // b = 37    
+	//	float c = a - b; // c = 0.777779   
+	//	c *= 100; // c = 77.777863   
+	//	int d = c; // d = 77;    
+	//	a = b + d / (float)100; // a = 37.770000;
+
+
+	// printing ordered list 
+	for(x=head; x!=NULL;x=x->next) {
+		fprintf(stdout,"%s %d\n", x->value,x->occ);
+	}
+
+
+
+
+	free_list(head);
 
 	fclose(fp);
 	fclose(fp_1);
@@ -90,4 +109,79 @@ int main (int argc , char ** argv ) {
 	return 0;
 }
 
+static void add_to_list(node_p  head, double value){
+	node_p x,new_node;
+	char str[6];
+	if( head==NULL) {
 
+
+		head=(node_p)malloc ( sizeof(struct node) );
+		if(head==NULL) {
+			fprintf(stderr,"error allocating head of list\n");
+			exit(-1);
+		}
+		sprintf(head->value,"%.2lf",value);
+		head->occ=0;
+		head->next=NULL;
+	}
+	else {
+
+		//TODO recheck
+		sprintf(str,"%.2lf",value);
+		//iterating over the list
+		for(x=head;x!=NULL;x=x->next) {
+			// comparing without caring of the second decimal digit
+			if(strncmp(x->value,str,4)==0){ // equal 
+				x->occ++;
+				break;
+			}
+			if(x->next!=NULL) {
+				if(strncmp(x->value,str,4)>0 && strncmp(x->next->value,str,4)<0  ) {
+
+					new_node=(node_p)malloc ( sizeof(struct node) );
+					if(new_node==NULL) {
+						fprintf(stderr,"error allocating head of list\n");
+						exit(-1);
+					}
+					new_node->next=x->next;
+					x->next=new_node;
+					new_node->occ=0;
+					strcpy(new_node->value,str);
+				}
+			}else {
+				new_node=(node_p)malloc ( sizeof(struct node) );
+				if(new_node==NULL) {
+					fprintf(stderr,"error allocating head of list\n");
+					exit(-1);
+				}
+				new_node->occ=0;
+				strcpy( new_node->value,str);				
+
+				if (strncmp(x->value,str,4) >0 ) {
+					x->next=new_node;
+					new_node->next=NULL;
+
+				} else  {
+					// changing head
+					new_node->next=x;
+					head=new_node;
+
+				}
+
+			}
+		}
+
+	}
+
+}
+
+
+static void free_list(node_p element) {
+
+	if(element==NULL) {
+		return;
+	}
+
+	free_list(element->next);
+	free(element);
+}
