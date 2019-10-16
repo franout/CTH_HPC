@@ -7,7 +7,7 @@
 #include <string.h>
 #define INPUT_FILE "./coordinates.txt"
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 2048 
+#define BUFFER_SIZE 100 
 #define EPS 2
 /*ordered linked list definition */
 typedef struct node * node_p;
@@ -16,7 +16,7 @@ struct node {
 	int occ;
 	char value[5+1]; // length of string + \0
 	node_p next;
-};
+}node;
 
 
 // function for free memory 
@@ -50,8 +50,8 @@ int main (int argc , char ** argv ) {
 		}
 	}
 	omp_set_num_threads(N_THREAD);
-	work_string=(char *)calloc(ROW_L+1, sizeof(char));
-	work_string_2=(char *)calloc(ROW_L+1,sizeof(char));
+	work_string=(char *)calloc((ROW_L+1)*BUFFER_SIZE, sizeof(char));
+	work_string_2=(char *)calloc((ROW_L+1)*BUFFER_SIZE,sizeof(char));
 	if(work_string==NULL || work_string_2==NULL) {
 	fprintf(stderr,"error allocating strings\n");
 	exit(-1);
@@ -65,23 +65,31 @@ int main (int argc , char ** argv ) {
 	int i=1;
 	fseek(fp_1,i*(ROW_L),SEEK_SET);
 
-	while ((fread( work_string,sizeof(char), ROW_L,fp ))>0) {	
-		sscanf(work_string,"%lf %lf %lf\n",&x1,&y1,&z1);
+	while ((fread( work_string,sizeof(char), ROW_L*BUFFER_SIZE,fp ))>0) {	
+
+		for(int kb=0;kb<BUFFER_SIZE;kb++) {
+			printf("%.*s-",ROW_L,work_string+kb*ROW_L);		
+		}
+				
+	
+	
+	
+		/*	sscanf(work_string,"%lf %lf %lf\n",&x1,&y1,&z1);
 				int j=1;
 	while(fread(work_string_2,sizeof(char),ROW_L,fp_1)>0) {
 			sscanf(work_string_2,"%lf %lf %lf\n",&x2,&y2,&z2);
 			dist=sqrt(pow(x2-x1 ,2)+pow(y2-y1,2)+pow(z2-z1,2));
-//			add_to_list(head,dist);
-	printf("dist - %.2lf\n",dist);
+			add_to_list(head,dist);
+	//	printf("dist - %.2lf\n",dist);
 				j++;
 		}
 		
 		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
-
+*/
 		i++;
 	}
 
-
+printf("%d\n",i);
 	// fashion way 
 	//	float a = 37.777779;
 	//
@@ -116,15 +124,24 @@ int main (int argc , char ** argv ) {
 static void add_to_list(node_p  head, double value){
 	node_p x,new_node;
 	char str[6];
+	sprintf(str,"%.2f",value);
 	
+	new_node=(node_p ) malloc(sizeof( node));
+	new_node-> occ=0;
+	strcpy(new_node->value,str);
+	new_node->next=NULL;
 	
-	
-	for (x=head;x->next!=NULL;x=x->next) {
-	
-	
-	
+	if(head==NULL) 
+	{
+	head=new_node;
+
 	}
-	
+	else {
+	for (x=head;x->next!=NULL;x=x->next) ;
+	x->next=new_node;
+
+
+	}
 
 	return ;
 }
