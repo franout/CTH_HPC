@@ -71,8 +71,8 @@ int main (int argc , char ** argv ) {
 	while(fread(work_string_2,sizeof(char),ROW_L,fp_1)>0) {
 			sscanf(work_string_2,"%lf %lf %lf\n",&x2,&y2,&z2);
 			dist=sqrt(pow(x2-x1 ,2)+pow(y2-y1,2)+pow(z2-z1,2));
-			add_to_list(head,dist);
-	//	printf("dist - %.2lf\n",dist);
+//			add_to_list(head,dist);
+	printf("dist - %.2lf\n",dist);
 				j++;
 		}
 		
@@ -116,69 +116,18 @@ int main (int argc , char ** argv ) {
 static void add_to_list(node_p  head, double value){
 	node_p x,new_node;
 	char str[6];
-	if( head==NULL) {
-
-
-		head=(node_p)malloc ( sizeof(struct node) );
-		if(head==NULL) {
-			fprintf(stderr,"error allocating head of list\n");
-			exit(-1);
-		}
-		sprintf(head->value,"%.2lf",value);
-		head->occ=0;
-		head->next=NULL;
+	
+	
+	
+	for (x=head;x->next!=NULL;x=x->next) {
+	
+	
+	
 	}
-	else {
+	
 
-		//TODO recheck
-		sprintf(str,"%.2lf",value);
-		//iterating over the list
-		for(x=head;x!=NULL;x=x->next) {
-			// comparing without caring of the second decimal digit
-			if(strncmp(x->value,str,4)==0){ // equal 
-				x->occ++;
-				break;
-			}
-			if(x->next!=NULL) {
-				if(strncmp(x->value,str,4)>0 && strncmp(x->next->value,str,4)<0  ) {
-
-					new_node=(node_p)malloc ( sizeof(struct node) );
-					if(new_node==NULL) {
-						fprintf(stderr,"error allocating head of list\n");
-						exit(-1);
-					}
-					new_node->next=x->next;
-					x->next=new_node;
-					new_node->occ=0;
-					strcpy(new_node->value,str);
-				}
-			}else {
-				new_node=(node_p)malloc ( sizeof(struct node) );
-				if(new_node==NULL) {
-					fprintf(stderr,"error allocating head of list\n");
-					exit(-1);
-				}
-				new_node->occ=0;
-				strcpy( new_node->value,str);				
-
-				if (strncmp(x->value,str,4) >0 ) {
-					x->next=new_node;
-					new_node->next=NULL;
-
-				} else  {
-					// changing head
-					new_node->next=x;
-					head=new_node;
-
-				}
-
-			}
-		}
-
-	}
-
+	return ;
 }
-
 
 
 static void free_list(node_p element) {
