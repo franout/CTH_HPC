@@ -30,9 +30,10 @@ int main (int argc , char ** argv ) {
 
 	int N_THREAD=0;
 	int option=0;
+	int dist,x1,x2,y1,y2,z1,z2, tmp1,tmp2,tmp3;
+	char* work_string,* work_string_2,*tmp; // +\n + \0
+
 	FILE * fp,*fp_1;
-	double dist,x1,x2,y1,y2,z1,z2;
-	char* work_string,* work_string_2; // +\n + \0
 	node_p head=NULL;
 	node_p x;
 	/*it returns the parsed char and as third arg it requires the separation char for arguments*/
@@ -52,9 +53,10 @@ int main (int argc , char ** argv ) {
 	omp_set_num_threads(N_THREAD);
 	work_string=(char *)calloc((ROW_L+1)*BUFFER_SIZE, sizeof(char));
 	work_string_2=(char *)calloc((ROW_L+1)*BUFFER_SIZE,sizeof(char));
-	if(work_string==NULL || work_string_2==NULL) {
-	fprintf(stderr,"error allocating strings\n");
-	exit(-1);
+	tmp=(char *)calloc(ROW_L+1, sizeof(char));
+	if(work_string==NULL || work_string_2==NULL || tmp==NULL) {
+		fprintf(stderr,"error allocating strings\n");
+		exit(-1);
 	}
 	fp=fopen(INPUT_FILE,"r");
 	fp_1=fopen(INPUT_FILE,"r");
@@ -63,41 +65,47 @@ int main (int argc , char ** argv ) {
 		exit(-1);
 	}
 	int i=1;
+	x1=y1=z1=x2=y2=z2=tmp1=tmp2=tmp3=0;
 	fseek(fp_1,i*(ROW_L),SEEK_SET);
 
 	while ((fread( work_string,sizeof(char), ROW_L*BUFFER_SIZE,fp ))>0) {	
+		int j=1;
+		while(fread(work_string_2,sizeof(char),ROW_L,fp_1)>0) {
+			// parallel part 
+			//
+			// if too slow switch second reading loop with the parsing buffer loop
+			for(int kb=0;kb<BUFFER_SIZE;kb++) {
+				strncpy(tmp,work_string+kb*ROW_L,ROW_L);
 
-		for(int kb=0;kb<BUFFER_SIZE;kb++) {
-			printf("%.*s-",ROW_L,work_string+kb*ROW_L);		
+				sscanf(tmp,"%d.%d %d.%d %d.%d\n",&x1,&x2,&y1,&y2,&z1,&z2);		
+				x2+=x1*1000;
+				y2+=y1*1000;
+				z2+=z1*1000;
+
+				for(int kb_i=0;kb_i<BUFFER_SIZE;jb_i++) {
+					strncpy(tmp,work_string_2+kb_i*ROW_L,ROW_L);
+					sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
+					x1+=tmp1*1000;
+					y1+=tmp2*1000;
+					z1+=tmp3*1000;
+					// compute distance
+					
+
+					// add to a list CRITICAL section 	
+
+				}
+
+
+				j++;	
+			}
+
+
+
 		}
-				
-	
-	
-	
-		/*	sscanf(work_string,"%lf %lf %lf\n",&x1,&y1,&z1);
-				int j=1;
-	while(fread(work_string_2,sizeof(char),ROW_L,fp_1)>0) {
-			sscanf(work_string_2,"%lf %lf %lf\n",&x2,&y2,&z2);
-			dist=sqrt(pow(x2-x1 ,2)+pow(y2-y1,2)+pow(z2-z1,2));
-			add_to_list(head,dist);
-	//	printf("dist - %.2lf\n",dist);
-				j++;
-		}
-		
 		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
-*/
+
 		i++;
 	}
-
-printf("%d\n",i);
-	// fashion way 
-	//	float a = 37.777779;
-	//
-	//	int b = a; // b = 37    
-	//	float c = a - b; // c = 0.777779   
-	//	c *= 100; // c = 77.777863   
-	//	int d = c; // d = 77;    
-	//	a = b + d / (float)100; // a = 37.770000;
 
 
 	// printing ordered list 
@@ -109,6 +117,7 @@ printf("%d\n",i);
 
 
 	free_list(head);
+	free(tmp);
 	free(work_string);
 	free(work_string_2);
 	fclose(fp);
@@ -125,20 +134,20 @@ static void add_to_list(node_p  head, double value){
 	node_p x,new_node;
 	char str[6];
 	sprintf(str,"%.2f",value);
-	
+
 	new_node=(node_p ) malloc(sizeof( node));
 	new_node-> occ=0;
 	strcpy(new_node->value,str);
 	new_node->next=NULL;
-	
+
 	if(head==NULL) 
 	{
-	head=new_node;
+		head=new_node;
 
 	}
 	else {
-	for (x=head;x->next!=NULL;x=x->next) ;
-	x->next=new_node;
+		for (x=head;x->next!=NULL;x=x->next) ;
+		x->next=new_node;
 
 
 	}
