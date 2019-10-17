@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <omp.h> 
+#include <omp.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-#define INPUT_FILE "./coordinates.txt"
+#define INPUT_FILE "./coordinates.txt" 
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 2048 
+#define BUFFER_SIZE 2048
 #define EPS 1
 /*ordered linked list definition */
 typedef struct node * node_p;
@@ -19,10 +19,10 @@ struct node {
 }node;
 
 
-// function for free memory 
+// function for free memory
 static void free_list(node_p  element) ;
 
-static void add_to_list(node_p*  head, double value);
+static void add_to_list(node_p *  head, double value);
 
 
 
@@ -43,7 +43,7 @@ int main (int argc , char ** argv ) {
 		switch(option){
 
 			case 't':
-				sscanf(optarg,"%d",&N_THREAD);		
+				sscanf(optarg,"%d",&N_THREAD);
 				break;
 			default:
 				fprintf(stdout,"no valid arguments\n");
@@ -70,16 +70,16 @@ int main (int argc , char ** argv ) {
 	x1=y1=z1=x2=y2=z2=tmp1=tmp2=tmp3=read_char=read_char_2=0;
 	fseek(fp_1,i*(ROW_L),SEEK_SET);
 
-	while ((read_char=fread( work_string,sizeof(char), BUFFER_SIZE,fp ))>0) {	
+	while ((read_char=fread( work_string,sizeof(char), BUFFER_SIZE,fp ))>0) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-
+//#pragma omp parallel for shared(read_char,read_char_2,x1,x2,y1,y2,z1,z2,work_string,work_string_2)
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
 
-				/*sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);		
+				/*sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
 				  x2+=tmp1*1000;
 				  y2+=tmp2*1000;
 				  z2+=tmp3*1000;
@@ -97,25 +97,19 @@ int main (int argc , char ** argv ) {
 					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)); */
 					sscanf(tmps2,"%lf %lf %lf\n",&x1,&y1,&z1);
 					dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
-					// add to a list CRITICAL section 	
+					// add to a list CRITICAL section
+//#pragma omp critical
 					add_to_list ( &head, dist);
 				}
-
-
-
-
 			}
-
-			j++;	
+			j++;
 
 		}
 		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
-
 		i++;
 	}
 
-
-	// printing ordered list 
+	// printing ordered list
 	for(x=head; x!=NULL;x=x->next) {
 		fprintf(stdout,"%s %d\n", x->value,x->occ);
 	}
@@ -124,6 +118,7 @@ int main (int argc , char ** argv ) {
 
 
 	free_list(head);
+
 	free(tmps);
 	free(tmps2);
 	free(work_string);
@@ -138,42 +133,45 @@ int main (int argc , char ** argv ) {
 	return 0;
 }
 
-static void add_to_list(node_p * head, double value){
+static void add_to_list(node_p *head, double value){
 	node_p x,y,new_node;
 	char str[6];
-	node_p myhead=*head;
 	sprintf(str,"%.2f",value);
 
-	new_node=(node_p ) malloc(sizeof( node));
+	new_node=(node_p ) malloc(sizeof(struct node));
 	new_node-> occ=0;
 	strcpy(new_node->value,str);
 	new_node->next=NULL;
-	//TODO CHECK LIST 
-	if(myhead==NULL) {
-		myhead=new_node;	
+	//TODO CHECK LIST
+
+	/*	//naive implementatio-> add to head
+		new_node->next=myhead;
+
+	 *head=new_node;
+	 */
+
+
+	if(*head==NULL) {
+		*head=new_node;
 	}
 
 	else {
-		for(x=myhead;x!=NULL;x=x->next) {
+
+		for(x=(*head)->next, y=*head;x!=NULL && strcmp(str,x->value)>0 ;y=x, x=x->next) {
 			if( strcmp(x->value,str)<=EPS || strcmp(x->value,str)>=-EPS ) {
 				// same value
 				x->occ++;
 				free(new_node);
+				new_node=NULL;
 				break;
-			}  else if (strcmp(x->value,str)>0 && strcmp(x->next->value,str)<0 )  {
-				new_node->next=x->next;
-				x->next=new_node;
-				break;
-			}else if (strcmp(x->value,str)>0 && x->next==NULL)  {
-
-				new_node->next=NULL;
-				x->next=new_node;
-				break;
-			}
+			} 
+		}
+		if(new_node!=NULL ) {
+		// add 
+		y->next=new_node;
 		}
 
-
-	}	
+	}
 	return ;
 }
 
