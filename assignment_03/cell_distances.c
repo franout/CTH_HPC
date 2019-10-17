@@ -7,8 +7,8 @@
 #include <string.h>
 #define INPUT_FILE "./coordinates.txt"
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 100 
-#define EPS 2
+#define BUFFER_SIZE 2048 
+#define EPS 1
 /*ordered linked list definition */
 typedef struct node * node_p;
 
@@ -22,7 +22,7 @@ struct node {
 // function for free memory 
 static void free_list(node_p  element) ;
 
-static void add_to_list(node_p  head, double value);
+static void add_to_list(node_p*  head, double value);
 
 
 
@@ -32,7 +32,7 @@ int main (int argc , char ** argv ) {
 	int option=0;
 	double x1,x2,y1,y2,z1,z2, tmp1,tmp2,tmp3;
 	double dist;
-	char* work_string,* work_string_2,*tmp; // +\n + \0
+	char* work_string,* work_string_2,*tmps,*tmps2; // +\n + \0
 	long int read_char,read_char_2;
 	FILE * fp,*fp_1;
 	node_p head=NULL;
@@ -52,10 +52,11 @@ int main (int argc , char ** argv ) {
 		}
 	}
 	omp_set_num_threads(N_THREAD);
-	work_string=(char *)calloc((ROW_L+1)*BUFFER_SIZE, sizeof(char));
-	work_string_2=(char *)calloc((ROW_L+1)*BUFFER_SIZE,sizeof(char));
-	tmp=(char *)calloc(ROW_L+1, sizeof(char));
-	if(work_string==NULL || work_string_2==NULL || tmp==NULL) {
+	work_string=(char *)calloc(BUFFER_SIZE, sizeof(char));
+	work_string_2=(char *)calloc(BUFFER_SIZE,sizeof(char));
+	tmps=(char *)calloc(ROW_L+1, sizeof(char));
+	tmps2=(char *) calloc(ROW_L+1,sizeof(char));
+	if(work_string==NULL || work_string_2==NULL || tmps==NULL|| tmps2==NULL) {
 		fprintf(stderr,"error allocating strings\n");
 		exit(-1);
 	}
@@ -69,41 +70,43 @@ int main (int argc , char ** argv ) {
 	x1=y1=z1=x2=y2=z2=tmp1=tmp2=tmp3=read_char=read_char_2=0;
 	fseek(fp_1,i*(ROW_L),SEEK_SET);
 
-	while ((read_char=fread( work_string,sizeof(char), ROW_L*BUFFER_SIZE,fp ))>0) {	
+	while ((read_char=fread( work_string,sizeof(char), BUFFER_SIZE,fp ))>0) {	
 		int j=1;
-		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE*ROW_L,fp_1))>0) {
-			// parallel part 
+		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
+			// parallel part
+
 			// if too slow switch second reading loop with the parsing buffer loop
-			for(int kb=0;kb<(BUFFER_SIZE);kb++) {
-				strncpy(tmp,work_string+kb*ROW_L,ROW_L);
-//				printf("->%s",tmp);
+			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
+				memcpy(tmps,work_string+kb,ROW_L);
+
 				/*sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);		
-				x2+=tmp1*1000;
-				y2+=tmp2*1000;
-				z2+=tmp3*1000;
-*/
-				sscanf(tmp,"%f %f %f\n",&x2,&y2,&z2);
-				for(int kb_i=0;kb_i<(BUFFER_SIZE);kb_i++) {
-					strncpy(tmp,work_string_2+kb_i*ROW_L,ROW_L);
-					//printf("--%s",tmp);
+				  x2+=tmp1*1000;
+				  y2+=tmp2*1000;
+				  z2+=tmp3*1000;
+				  */
+
+				sscanf(tmps,"%lf %lf %lf\n",&x2,&y2,&z2);
+				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
+
+					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
 					/*sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
-					x1+=tmp1*1000;
-					y1+=tmp2*1000;
-					z1+=tmp3*1000;
+					  x1+=tmp1*1000;
+					  y1+=tmp2*1000;
+					  z1+=tmp3*1000;
 					// compute distance
 					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)); */
-					sscanf(tmp,"%lf %lf %lf\n",&x1,&y1,&z1);
+					sscanf(tmps2,"%lf %lf %lf\n",&x1,&y1,&z1);
 					dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 					// add to a list CRITICAL section 	
-				printf("%.3lf\n",dist);
-					}
+					add_to_list ( &head, dist);
+				}
 
-		
 
-				j++;	
+
+
 			}
 
-
+			j++;	
 
 		}
 		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
@@ -121,7 +124,8 @@ int main (int argc , char ** argv ) {
 
 
 	free_list(head);
-	free(tmp);
+	free(tmps);
+	free(tmps2);
 	free(work_string);
 	free(work_string_2);
 	fclose(fp);
@@ -134,22 +138,23 @@ int main (int argc , char ** argv ) {
 	return 0;
 }
 
-static void add_to_list(node_p  head, double value){
+static void add_to_list(node_p * head, double value){
 	node_p x,y,new_node;
 	char str[6];
+	node_p myhead=*head;
 	sprintf(str,"%.2f",value);
 
 	new_node=(node_p ) malloc(sizeof( node));
 	new_node-> occ=0;
 	strcpy(new_node->value,str);
 	new_node->next=NULL;
-
-	if(head==NULL) {
-		head=new_node;	
+	//TODO CHECK LIST 
+	if(myhead==NULL) {
+		myhead=new_node;	
 	}
 
 	else {
-		for(x=head;x!=NULL;x=x->next) {
+		for(x=myhead;x!=NULL;x=x->next) {
 			if( strcmp(x->value,str)<=EPS || strcmp(x->value,str)>=-EPS ) {
 				// same value
 				x->occ++;
@@ -160,7 +165,7 @@ static void add_to_list(node_p  head, double value){
 				x->next=new_node;
 				break;
 			}else if (strcmp(x->value,str)>0 && x->next==NULL)  {
-				
+
 				new_node->next=NULL;
 				x->next=new_node;
 				break;
