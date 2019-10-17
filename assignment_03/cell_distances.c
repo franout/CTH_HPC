@@ -99,6 +99,7 @@ int main (int argc , char ** argv ) {
 					dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 					// add to a list CRITICAL section
 //#pragma omp critical
+
 					add_to_list ( &head, dist);
 				}
 			}
@@ -139,7 +140,7 @@ static void add_to_list(node_p *head, double value){
 	sprintf(str,"%.2f",value);
 
 	new_node=(node_p ) malloc(sizeof(struct node));
-	new_node-> occ=0;
+	new_node-> occ=1;
 	strcpy(new_node->value,str);
 	new_node->next=NULL;
 	//TODO CHECK LIST
@@ -157,10 +158,10 @@ static void add_to_list(node_p *head, double value){
 
 	else {
 
-		for(x=(*head)->next, y=*head;x!=NULL && strcmp(str,x->value)>0 ;y=x, x=x->next) {
-			if( strcmp(x->value,str)<=EPS || strcmp(x->value,str)>=-EPS ) {
+		for(x=(*head)->next, y=*head;x!=NULL && strcmp(y->value,str)>=0 ;y=x, x=x->next) {
+			if( strcmp(y->value,str)<=EPS || strcmp(y->value,str)>=-EPS ) {
 				// same value
-				x->occ++;
+				y->occ++;
 				free(new_node);
 				new_node=NULL;
 				break;
@@ -168,7 +169,9 @@ static void add_to_list(node_p *head, double value){
 		}
 		if(new_node!=NULL ) {
 		// add 
+		new_node->next=x;
 		y->next=new_node;
+		
 		}
 
 	}
