@@ -1,4 +1,4 @@
-# Assignment 2 report
+## Assignment 3 report
 
 ## Relevant concepts
 
@@ -80,10 +80,17 @@
  the cache misses, TLB misses, branch prediction misses.
  These bottlenecks have to be kept in mind while assesing to the benchmarks.  
 
+**OpenMP**
+>OpenMP is an application programming interface (API) to support the shared-memory multiple-thread form of parallel application development. 
+> *T.Sterling, M.Anderson, M. Brodowicz (2018) High Performance Computing, Modern Systems and Practices.
+
+ OpenMP is suitable for fine-grained parallelism. Compared to POSIX threads it provides the possibility of a much shorter and more decriptive code implementation.
+ 
+
 ## Intended program layout
 **Overall layout**
-The main goal of the assignment is to compute newton iteration according to the problem's defintion on the course website.
-The output file format is PPM, which will reppresent the root's convergence of the function.
+The main goal of assignment 3 is to compute and count distances between points in 3-dimensional space, using OpenMP as instructed in the problem's implementation details on the course website.
+The output of the program will be printed on the command terminal, which will consist of two column, the first being the distance between the two 3-dimational points and the second the number of times this distance was computed among all distances.
 
 
 All the work is splitted up among different threads, in particular:
