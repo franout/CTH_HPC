@@ -2,7 +2,6 @@ CC= gcc --std=c11
 CFLAGS= -Wall -o
 OPT= -O2
 LIBS=-fopenmp -lm 
-
 .PHONY: all
 cell_distances: cell_distances.c
 	$(CC) $(CFLAGS) ./cell_distances ./cell_distances.c $(LIBS) $(OPT)
