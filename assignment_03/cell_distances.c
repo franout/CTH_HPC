@@ -75,8 +75,7 @@ int main (int argc , char ** argv ) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-			//#pragma omp parallel for shared(read_char,read_char_2,x1,x2,y1,y2,z1,z2,work_string,work_string_2)
-
+#pragma omp single 		
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
@@ -89,7 +88,7 @@ int main (int argc , char ** argv ) {
 
 				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
 
-				//#pragma omp parallel for 
+#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb)
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
@@ -102,7 +101,10 @@ int main (int argc , char ** argv ) {
 					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
 					dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 					// add to a list CRITICAL section
-					//#pragma omp critical
+					printf("%.3f\n",dist);
+#pragma omp critical (list_insertion)
+					// try with reductio
+					// // try with reductionn
 					add_to_list ( &head, dist);
 				}
 			}
@@ -176,11 +178,7 @@ static void add_to_list(node_p *head, float value){
 				new_node->next=y;
 				*head=new_node;		
 
-			}else{
-				y->occ++;
-				free(new_node);		
 			}
-
 			/*			new_node->next=x;
 						y->next=new_node;
 						*/
