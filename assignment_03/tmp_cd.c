@@ -2,6 +2,7 @@
 
 
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -12,7 +13,6 @@
 #define INPUT_FILE "./cell_e5" 
 #define ROW_L 24// length of row  + \n
 #define BUFFER_SIZE 2048
-#define EPS 1
 /*ordered linked list definition */
 typedef struct node * node_p;
 
@@ -26,7 +26,9 @@ node_p next;
 // function for free memory
 static void free_list(node_p  element) ;
 
-static void add_to_list(node_p *  head, double value);
+static void add_to_list(node_p *  head, float  value);
+
+static int mystrcmp ( const char * str1, const char * str2);
 
 
 
@@ -34,8 +36,8 @@ int main (int argc , char ** argv ) {
 
 int N_THREAD=0;
 int option=0;
-double x1,x2,y1,y2,z1,z2, tmp1,tmp2,tmp3;
-double dist;
+float x1,x2,y1,y2,z1,z2, tmp1,tmp2,tmp3;
+float dist;
 char* work_string,* work_string_2,*tmps,*tmps2; // +\n + \0
 long int read_char,read_char_2;
 FILE * fp,*fp_1;
@@ -78,7 +80,8 @@ while ((read_char=fread( work_string,sizeof(char), BUFFER_SIZE,fp ))>0) {
 int j=1;
 while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 // parallel part
-#pragma omp parallel for
+#pragma omp parallel for shared(read_char,read_char_2,x1,x2,y1,y2,z1,z2,work_string,work_string_2)
+
 // if too slow switch second reading loop with the parsing buffer loop
 for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 memcpy(tmps,work_string+kb,ROW_L);
@@ -89,7 +92,7 @@ y2+=tmp2*1000;
 z2+=tmp3*1000;
 */
 
-sscanf(tmps,"%lf %lf %lf\n",&x2,&y2,&z2);
+sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
 for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 memcpy(tmps2,work_string_2+kb_i,ROW_L);;
@@ -99,9 +102,10 @@ y1+=tmp2*1000;
 z1+=tmp3*1000;
 // compute distance
 dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)); */
-sscanf(tmps2,"%lf %lf %lf\n",&x1,&y1,&z1);
+sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
 dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 // add to a list CRITICAL section
+#pragma omp critical
 add_to_list ( &head, dist);
 }
 }
@@ -121,6 +125,7 @@ fprintf(stdout,"%s %d\n", x->value,x->occ);
 
 
 free_list(head);
+
 free(tmps);
 free(tmps2);
 free(work_string);
@@ -135,57 +140,40 @@ exit(-1);
 return 0;
 }
 
-static void add_to_list(node_p *head, double value){
+static void add_to_list(node_p *head, float value){
 node_p x,y,new_node;
 char str[6];
-node_p myhead=*head;
+if(value<9.99) {
+sprintf(str,"0%.2f",value);
+}else {
 sprintf(str,"%.2f",value);
-
+}
 new_node=(node_p ) malloc(sizeof(struct node));
-new_node-> occ=0;
+new_node-> occ=1;
 strcpy(new_node->value,str);
 new_node->next=NULL;
-//TODO CHECK LIST
 
-//naive implementatio-> add to head
-new_node->next=myhead;
-
+if(*head==NULL) {
 *head=new_node;
-
-
-
-/*
-for (x=h->next, p=h;
-x!=NULL && KEYgreater(k,KEYget(x->val));
-p=x, x=x->next);
-p->next = newNode(val, x);
-return h;
-
-if(myhead==NULL) {
-myhead=new_node;
 }
-
 else {
-for(x=myhead;x!=NULL;x=x->next) {
-if( strcmp(x->value,str)<=EPS || strcmp(x->value,str)>=-EPS ) {
-// same value
-x->occ++;
+
+for(x=(*head)->next, y=*head;x!=NULL &&  strcmp(str,x->value)>=0 ;y=x, x=x->next) {
+if ( strcmp(str,y->value)==0) {
+y->occ++;
 free(new_node);
-break;
-}  else if (strcmp(x->value,str)>0 && strcmp(x->next->value,str)<0 )  {
-new_node->next=x->next;
-x->next=new_node;
-break;
-}else if (strcmp(x->value,str)>0 && x->next==NULL)  {
-
-new_node->next=NULL;
-x->next=new_node;
+new_node=NULL;
 break;
 }
+
 }
+if(new_node!=NULL) {
 
+new_node->next=x;
+y->next=new_node;
 
-}*/
+}
+}
 return ;
 }
 
@@ -198,4 +186,15 @@ return;
 
 free_list(element->next);
 free(element);
+}
+
+
+static int mystrcmp ( const char * str1, const char * str2){
+int sum =0;
+
+for(int i=0;i<6;i++) {
+sum+=str2[i]-str1[i];
+}
+return sum ;
+
 }

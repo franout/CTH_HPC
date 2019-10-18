@@ -31,7 +31,7 @@ performace:
 	       done <  ./cell_distances.c
 	more tmp_cd.c > cell_distances.c
 	make cell_distances
-	hyperfine -r 10 './cell_distances -t 1' 
+	hyperfine -r 10 './cell_distances -t 1 ' 
 	
 	echo "" > tmp_cd.c
 	regexp='#define INPUT_FILE .*'; \
@@ -44,19 +44,21 @@ performace:
 	       	fi ; \
 	       done <  ./cell_distances.c
 	more tmp_cd.c > cell_distances.c
-	more cell_distances.c
 	make cell_distances
 	hyperfine -r 10 './cell_distances -t 5'
 	hyperfine -r 10 './cell_distances -t 10'
 	hyperfine -r 10 './cell_distances -t 20'
 	more .cell_distances.c > cell_distances.c
+	rm -f tmp_cd.c
+	rm -f ./.cell_distances.c	
 test:  pack
 	/home/hpc2019/a3_grading/check_submission.py cell_distances.tar.gz
 pack: cell_distances
-	tar czf cell_distances.tar.gz ./cell_distances.exe ./cell_distances.c
+	tar czf cell_distances.tar.gz ./Makefile ./cell_distances.c
 check_memory: cell_distances
 	valgrind --leak-check=full --show-leak-kinds=all ./cell_distances
 clean:
 	rm -f cell_distances
 	rm -f  vgcore.*
-
+	rm -rf ./extracted
+	rm -rf ./distances
