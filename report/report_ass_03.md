@@ -60,80 +60,63 @@
   to a similar performace as the SSD. Therefore the operation for writing files should not have
   a big overhead.
 
-**Threads and Mutexes**
-
-> A thread of execution is the smallest sequence of programmed instructions in order to achieve the parallelism.
-> *-[wikipedia: Thread (Computer science)]*
- 
- In principle, the threads can be executed in parallel, by different processors. To avoid conflic on shared variables
- they have to be synchronized, a naive method is the use of mutexes. 
-
-  Mutexes will allow global variables (used for data tranferring) to be accessed by one single thread at a time.
-  In order to assure deterministic behaviour it is imperative that the variable is accessed by no more than one thread at a time.
-
-**Load Balancing**
- Some problems can be split up into independent subproblems. These problems will be distributed among several threads, 
- simplifying the work done by a single thread.
-
-**Possible Bottlenecks**
- Even with fast processors the performance is bound by other factors, some of them are disk access, data trasfer done in memory,
- the cache misses, TLB misses, branch prediction misses.
- These bottlenecks have to be kept in mind while assesing to the benchmarks.  
-
 **OpenMP**
 >OpenMP is an application programming interface (API) to support the shared-memory multiple-thread form of parallel application development. 
 > *T.Sterling, M.Anderson, M. Brodowicz (2018) High Performance Computing, Modern Systems and Practices.
 
  OpenMP is suitable for fine-grained parallelism. Compared to POSIX threads it provides the possibility of a much shorter and more decriptive code implementation.
  
+ Threads are the primary means for parallel computation. Each thread is a schedulable entity within which a sequence of instructions are executed, it has private variables and internal control at its disposal. OpenMP provides the flexibility to define the type of scheduling the programmer prefers. This is done in an efficient and concise code. Specified pragmas are used to define the characteristics of the parallelization tailored for a specific proram. Furthermore, offloading can be used as a simple way to exploit co-processors. On each device there could be a team of threds adjusted to execute a specific type of problem. The collection of the teams of threads is a league. For instance, a for loop can be split over a number of teams, together constituting a league that is executing the whole loop in parallel.
 
 ## Intended program layout
 **Overall layout**
 The main goal of assignment 3 is to compute and count distances between points in 3-dimensional space, using OpenMP as instructed in the problem's implementation details on the course website.
 The output of the program will be printed on the command terminal, which will consist of two column, the first being the distance between the two 3-dimational points and the second the number of times this distance was computed among all distances.
 
+* Input
+ The points in the 3-dimensional space are given in a file. To read this file we have to analyze it with
+ the help of fread(), fseek() and so on. The file is read into a buffer. The chars in the buffer are
+ are then converted into integers. To make sure we do not lose information, since the coordinates
+ are given as float, we multiply the numbers by 1000. This should not be forgotten to make sure the
+ results are of correct size.
 
-All the work is splitted up among different threads, in particular:
 
-* Master thread: it is in charge of creating and managing the working threads and the necessary data structure.
+** Division of Subtasks **
 
-* Working threads: they are in charge of resolving the given problem.
+* Read and parsing the file
 
-**Division in subtasks**
-* Thread management
-  	 - create threads
-   	 - give tasks to threads
-	 - wait for threads
-	 - prepare all the data structures for threads
-* Computation
-	+ calculate roots
-	+ split into subproblems (it is a possible improvement if the computation is too slow )
-	+ write to global variables (data transfer)
-	+ check conditions for convergence
-	+ compute the next value of x
-		
-* Writing
-	+ assign colours to roots
-	+ open files
-	+ write files
-	+ create result pictures 
+* Computation of the distances and increment of the corresponding counts
+ Use Pointers for better performance exploiting OmpenMP this way
+ Babylonial method for the square root turns out to be slower so we used the sqrt() function.
+ We use the flots as the data tyoe for the program
+
+* Sorting
+ To sort the results we are using an ordered linked list. The list is getting sorted everytime a new
+ value is added.
+
+* Output
+ For printing the results we are using fprintf() and post the result to the stdout. Manipulating the
+ string while printing can be useful to avoid a conversion from int to float. Since this counts more
+ as a "quick-and-dirty" solution it should be properly discussed.
+
+
+
+* Memory management
+Sorting
+ Linked list
+
+
+* Parallelization
+ OpenML
+
+
+
+
 
 **Resolution of each subtask**.
 
-*Thread management*
-The Master thread is in charge of the thread management, it will parse the argument given to the program from the command line and handle properly the behaviour of the program accordingly,i.e. creating the required number of computation threads, the degree of the function and the required rows and colums of the output picture.
-It will also wait the computation threads to finish and as last step, a wait for the writing thread which may be slower than others since it has to deal with writing operation on the HDD.
+**Implementation Details**
 
-*Computation*
-Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
- 
-A clever implementation could be that each computation thread measures its performance. At a certain amount of iterations it would be considered as slow and is capable of creating (and waiting) sub-threads which could, in principle, speed up the overall computation.
+The programm at no time may consume more than 1 GiBi byte = 1024^3 bytes of memory
 
-
-*Writing*
-The writing thread will open the files according to their names then use a busy form of waiting for the data for writing them in the proper order.
-Regularly reading the global variables, the thread will wait for a row to be finished and then start converting it into a string and mapping each value to a corresponding colour. The amount of colors depends on the degree of the function + 2 extra cases (convergence to infinity and to zero).
-  
-Another implementation could be to create a writing thread for each file since the data of each is independent from the others.
-
-There could be also the possibility to create a thread which is in charge of only mapping colour to a data. Moreover, the thread must set the global variable item_done properly, this variable is needed for the writing thread to correctly write on the files.
+You may not make any assumption on the number of cells except that there is less than 2^32.
