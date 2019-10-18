@@ -9,8 +9,6 @@
 #define ROW_L 24// length of row  + \n
 #define BUFFER_SIZE 72
 
-
-
 /*ordered linked list definition */
 typedef struct node * node_p;
 
