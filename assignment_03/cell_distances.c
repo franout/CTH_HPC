@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-#define INPUT_FILE "./cell_e5"
+#define INPUT_FILE "./cell_e4"
 #define ROW_L 24// length of row  + \n
 #define BUFFER_SIZE 72
 
@@ -34,7 +34,7 @@ int main (int argc , char ** argv ) {
 	int N_THREAD=0;
 	int option=0;
 	float x1,x2,y1,y2,z1,z2, tmp1,tmp2,tmp3;
-	float dist;
+	float dist,temp,sqrt;
 	char* work_string,* work_string_2,*tmps,*tmps2; // +\n + \0
 	long int read_char,read_char_2;
 	FILE * fp,*fp_1;
@@ -83,34 +83,47 @@ int main (int argc , char ** argv ) {
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
-/*
-				sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
-				  x2+=tmp1*1000;
-				  y2+=tmp2*1000;
-				  z2+=tmp3*1000;
-*/				  
+				/*
+				   sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
+				   x2+=tmp1*1000;
+				   y2+=tmp2*1000;
+				   z2+=tmp3*1000;
+				   */				  
 
 				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
 
-#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb) private(x1,y1,z1) reduction ( insertion_list : dist)
+#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb) private(sqrt,temp,x1,y1,z1) schedule(runtime)
 
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
-/*					sscanf(tmps2,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
-					  x1+=tmp1*1000;
-					  y1+=tmp2*1000;
-					  z1+=tmp3*1000;
+					/*					sscanf(tmps2,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
+										x1+=tmp1*1000;
+										y1+=tmp2*1000;
+										z1+=tmp3*1000;
 					// compute distance
 					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));*/ 
 					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
-					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
+					dist=((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
 					// add to a list CRITICAL section
 					//	printf("%.3f\n",dist);
-/*
+					sqrt = dist / ((float)2);
+					temp = 0;
+
+					// Iterate until sqrt is different of temp, that is updated on the loop
+					while(sqrt != temp){
+						// initially 0, is updated with the initial value of 128
+						// (on second iteration = 65)
+						// and so on
+						temp = sqrt;
+						// Then, replace values (256 / 128 + 128 ) / 2 = 65
+						// (on second iteration 34.46923076923077)
+						// and so on
+						sqrt = ( dist/temp + temp) / 2;
+					}
 #pragma omp critical (list_insertion)
 
-					add_to_list ( &head, dist); */
+					add_to_list ( &head, sqrt); 
 				}
 			}
 			j++;
@@ -122,7 +135,7 @@ int main (int argc , char ** argv ) {
 
 	// printing ordered list
 	for(x=head; x!=NULL;x=x->next) {
-		fprintf(stdout,"%s %d\n", x->value,x->occ);
+		printf("%s %d\n", x->value,x->occ);
 	}
 
 
@@ -160,7 +173,7 @@ static void add_to_list(node_p *head, float value){
 	if(*head==NULL) {
 		*head=new_node;
 	}
-//TODO 	CHECKinsertion of last element
+	//TODO 	CHECKinsertion of last element
 	else {
 
 		for(x=(*head)->next, y=*head;x!=NULL && (diff= strcmp(str,x->value))>=0 ;y=x, x=x->next) {
@@ -173,7 +186,7 @@ static void add_to_list(node_p *head, float value){
 
 		}
 		if(new_node!=NULL) {
-			 diff=strcmp(str,y->value);
+			diff=strcmp(str,y->value);
 			if(diff>0) {
 				new_node->next=x;
 				y->next=new_node;
