@@ -86,11 +86,33 @@
 
  OpenMP is suitable for fine-grained parallelism. Compared to POSIX threads it provides the possibility of a much shorter and more decriptive code implementation.
  
+ Threads are the primary means for parallel computation. Each thread is a schedulable entity within which a sequence of instructions are executed, it has private variables and internal control at its disposal. OpenMP provides the flexibility to define the type of scheduling the programmer prefers. This is done in an efficient and concise code. Specified pragmas are used to define the characteristics of the parallelization tailored for a specific proram. Furthermore, offloading can be used as a simple way to exploit co-processors. On each device there could be a team of threds adjusted to execute a specific type of problem. The collection of the teams of threads is a league. For instance, a for loop can be split over a number of teams, together constituting a league that is executing the whole loop in parallel.
+
+
 
 ## Intended program layout
 **Overall layout**
 The main goal of assignment 3 is to compute and count distances between points in 3-dimensional space, using OpenMP as instructed in the problem's implementation details on the course website.
 The output of the program will be printed on the command terminal, which will consist of two column, the first being the distance between the two 3-dimational points and the second the number of times this distance was computed among all distances.
+
+* Input
+ Read File
+
+* Computation
+ Use Pointers for better performance exploiting OmpenMP this way
+ Babylonial method for the square root turns out to be slower so we used the sqrt() function.
+ We use the flots as the data tyoe for the program
+
+* Sorting
+ Linked list
+
+* Output
+stdout,fprintf()
+sting manipulation
+
+
+* General
+ OpenML
 
 
 All the work is splitted up among different threads, in particular:
