@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -8,9 +7,8 @@
 #include <string.h>
 #define INPUT_FILE "./cell_e5"
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 64
+#define BUFFER_SIZE 72
 
-#define OMP 1 
 
 
 /*ordered linked list definition */
@@ -57,6 +55,8 @@ int main (int argc , char ** argv ) {
 		}
 	}
 	omp_set_num_threads(N_THREAD);
+#pragma omp declare reduction (insertion_list : float  : add_to_list( omp_in ))
+
 	work_string=(char *)calloc(BUFFER_SIZE, sizeof(char));
 	work_string_2=(char *)calloc(BUFFER_SIZE,sizeof(char));
 	tmps=(char *)calloc(ROW_L+1, sizeof(char));
@@ -79,40 +79,39 @@ int main (int argc , char ** argv ) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-#ifdef OMP
 #pragma omp single
-#endif 
+
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
-
-				/*sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
+/*
+				sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
 				  x2+=tmp1*1000;
 				  y2+=tmp2*1000;
 				  z2+=tmp3*1000;
-				  */
+*/				  
 
 				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
-#ifdef OMP
-#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb)
-#endif
+
+#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb) private(x1,y1,z1) reduction ( insertion_list : dist)
+
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
-					/*sscanf(tmp,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
+/*					sscanf(tmps2,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
 					  x1+=tmp1*1000;
 					  y1+=tmp2*1000;
 					  z1+=tmp3*1000;
 					// compute distance
-					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)); */
+					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));*/ 
 					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
-					dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
+					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
 					// add to a list CRITICAL section
 					//	printf("%.3f\n",dist);
-#ifdef OMP
+/*
 #pragma omp critical (list_insertion)
-#endif
-					add_to_list ( &head, dist);
+
+					add_to_list ( &head, dist); */
 				}
 			}
 			j++;
@@ -131,7 +130,6 @@ int main (int argc , char ** argv ) {
 
 
 	free_list(head);
-
 	free(tmps);
 	free(tmps2);
 	free(work_string);
@@ -149,6 +147,7 @@ int main (int argc , char ** argv ) {
 static void add_to_list(node_p *head, float value){
 	node_p x,y,new_node;
 	char str[6];
+	int diff;
 	if(value<9.99) {
 		sprintf(str,"0%.2f",value);
 	}else {
@@ -162,11 +161,11 @@ static void add_to_list(node_p *head, float value){
 	if(*head==NULL) {
 		*head=new_node;
 	}
-
+//TODO 	CHECKinsertion of last element
 	else {
 
-		for(x=(*head)->next, y=*head;x!=NULL &&  strcmp(str,x->value)>=0 ;y=x, x=x->next) {
-			if ( strcmp(str,y->value)==0) {
+		for(x=(*head)->next, y=*head;x!=NULL && (diff= strcmp(str,x->value))>=0 ;y=x, x=x->next) {
+			if ( diff==0) {
 				y->occ++;
 				free(new_node);
 				new_node=NULL;
@@ -175,16 +174,15 @@ static void add_to_list(node_p *head, float value){
 
 		}
 		if(new_node!=NULL) {
-			if(strcmp(str,y->value)>0) {
+			 diff=strcmp(str,y->value);
+			if(diff>0) {
 				new_node->next=x;
 				y->next=new_node;
 
 
-			}else if ( strcmp(str,y->value)<0) {
-
+			}else if ( diff<0) {
 				new_node->next=y;
 				*head=new_node;
-
 			}
 			/*			new_node->next=x;
 						y->next=new_node;

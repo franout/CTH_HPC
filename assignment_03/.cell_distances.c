@@ -1,6 +1,3 @@
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -8,9 +5,9 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-#define INPUT_FILE "./cell_e5" 
+#define INPUT_FILE "./coordinates.txt" 
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 4096
 /*ordered linked list definition */
 typedef struct node * node_p;
 
@@ -78,8 +75,7 @@ int main (int argc , char ** argv ) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-			#pragma omp parallel for shared(read_char,read_char_2,x1,x2,y1,y2,z1,z2,work_string,work_string_2)
-
+#pragma omp single 		
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
@@ -91,6 +87,8 @@ int main (int argc , char ** argv ) {
 				  */
 
 				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
+
+#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb)
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
@@ -103,7 +101,10 @@ int main (int argc , char ** argv ) {
 					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
 					dist=sqrt(pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 					// add to a list CRITICAL section
-					#pragma omp critical
+					printf("%.3f\n",dist);
+#pragma omp critical (list_insertion)
+					// try with reductio
+					// // try with reductionn
 					add_to_list ( &head, dist);
 				}
 			}
@@ -139,7 +140,7 @@ int main (int argc , char ** argv ) {
 }
 
 static void add_to_list(node_p *head, float value){
-	node_p x,y,new_node;
+	node_p x,y,new_node,z;
 	char str[6];
 	if(value<9.99) {
 		sprintf(str,"0%.2f",value);
@@ -154,9 +155,10 @@ static void add_to_list(node_p *head, float value){
 	if(*head==NULL) {
 		*head=new_node;
 	}
+
 	else {
 
-		for(x=(*head)->next, y=*head;x!=NULL &&  strcmp(str,x->value)>=0 ;y=x, x=x->next) {
+		for(x=(*head)->next, y=*head,z=NULL;x!=NULL &&  strcmp(str,x->value)>=0 ;z =y ,y=x, x=x->next) {
 			if ( strcmp(str,y->value)==0) {
 				y->occ++;
 				free(new_node);
@@ -166,12 +168,24 @@ static void add_to_list(node_p *head, float value){
 
 		}
 		if(new_node!=NULL) {
+			if(strcmp(str,y->value)>0) {
+				new_node->next=x;
+				y->next=new_node;
 
-			new_node->next=x;
-			y->next=new_node;
 
+			}else if ( strcmp(str,y->value)<0) {
+
+				new_node->next=y;
+				*head=new_node;		
+
+			}
+			/*			new_node->next=x;
+						y->next=new_node;
+						*/
 		}
 	}
+
+
 	return ;
 }
 
@@ -186,13 +200,3 @@ static void free_list(node_p element) {
 	free(element);
 }
 
-
-static int mystrcmp ( const char * str1, const char * str2){
-	int sum =0;
-
-	for(int i=0;i<6;i++) {
-		sum+=str2[i]-str1[i];
-	}
-	return sum ;
-
-}
