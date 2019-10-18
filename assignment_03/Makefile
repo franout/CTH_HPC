@@ -26,7 +26,7 @@ performance_e4:cell_distances
 test:  pack
 	/home/hpc2019/a3_grading/check_submission.py cell_distances.tar.gz
 pack: cell_distances
-	tar czf cell_distances.tar.gz ./Makefile ./cell_distances.c
+	tar czf ./cell_distances.tar.gz ./Makefile ./cell_distances.c
 check_memory: cell_distances
 	valgrind --leak-check=full --show-leak-kinds=all ./cell_distances
 clean:
