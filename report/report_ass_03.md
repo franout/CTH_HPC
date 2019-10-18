@@ -95,67 +95,35 @@
 The main goal of assignment 3 is to compute and count distances between points in 3-dimensional space, using OpenMP as instructed in the problem's implementation details on the course website.
 The output of the program will be printed on the command terminal, which will consist of two column, the first being the distance between the two 3-dimational points and the second the number of times this distance was computed among all distances.
 
-* Input
- Read File
 
-* Computation
+
+
+** Division of Subtasks **
+
+* Read and parsing the file
+
+* Computation of the distances and increment of the corresponding counts
  Use Pointers for better performance exploiting OmpenMP this way
  Babylonial method for the square root turns out to be slower so we used the sqrt() function.
  We use the flots as the data tyoe for the program
 
-* Sorting
+* Memory management
+Sorting
  Linked list
 
-* Output
-stdout,fprintf()
-sting manipulation
 
-
-* General
+* Parallelization
  OpenML
 
 
-All the work is splitted up among different threads, in particular:
 
-* Master thread: it is in charge of creating and managing the working threads and the necessary data structure.
 
-* Working threads: they are in charge of resolving the given problem.
-
-**Division in subtasks**
-* Thread management
-  	 - create threads
-   	 - give tasks to threads
-	 - wait for threads
-	 - prepare all the data structures for threads
-* Computation
-	+ calculate roots
-	+ split into subproblems (it is a possible improvement if the computation is too slow )
-	+ write to global variables (data transfer)
-	+ check conditions for convergence
-	+ compute the next value of x
-		
-* Writing
-	+ assign colours to roots
-	+ open files
-	+ write files
-	+ create result pictures 
 
 **Resolution of each subtask**.
 
-*Thread management*
-The Master thread is in charge of the thread management, it will parse the argument given to the program from the command line and handle properly the behaviour of the program accordingly,i.e. creating the required number of computation threads, the degree of the function and the required rows and colums of the output picture.
-It will also wait the computation threads to finish and as last step, a wait for the writing thread which may be slower than others since it has to deal with writing operation on the HDD.
+**Implementation Details**
 
-*Computation*
-Depending on the thread id each computation thread will be in charge to compute the roots' values of the function for a given row until some convergency conditions have been reached or number of iteration is reached, as last step it will handle the writing of the global variables used for data transfer, using a mutex for avoiding parallel writing that could lead to an undeterministic behaviour.
- 
-A clever implementation could be that each computation thread measures its performance. At a certain amount of iterations it would be considered as slow and is capable of creating (and waiting) sub-threads which could, in principle, speed up the overall computation.
+The programm at no time may consume more than 1 GiBi byte = 1024^3 bytes of memory
 
+You may not make any assumption on the number of cells except that there is less than 2^32.
 
-*Writing*
-The writing thread will open the files according to their names then use a busy form of waiting for the data for writing them in the proper order.
-Regularly reading the global variables, the thread will wait for a row to be finished and then start converting it into a string and mapping each value to a corresponding colour. The amount of colors depends on the degree of the function + 2 extra cases (convergence to infinity and to zero).
-  
-Another implementation could be to create a writing thread for each file since the data of each is independent from the others.
-
-There could be also the possibility to create a thread which is in charge of only mapping colour to a data. Moreover, the thread must set the global variable item_done properly, this variable is needed for the writing thread to correctly write on the files.
