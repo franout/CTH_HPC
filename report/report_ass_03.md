@@ -80,7 +80,12 @@ The output of the program will be printed on the command terminal, which will co
  are given as float, we multiply the numbers by 1000. This should not be forgotten to make sure the
  results are of correct size.
 
-* Computation
+
+** Division of Subtasks **
+
+* Read and parsing the file
+
+* Computation of the distances and increment of the corresponding counts
  Use Pointers for better performance exploiting OmpenMP this way
  Babylonial method for the square root turns out to be slower so we used the sqrt() function.
  We use the flots as the data tyoe for the program
@@ -96,3 +101,22 @@ The output of the program will be printed on the command terminal, which will co
 
 
 
+* Memory management
+Sorting
+ Linked list
+
+
+* Parallelization
+ OpenML
+
+
+
+
+
+**Resolution of each subtask**.
+
+**Implementation Details**
+
+The programm at no time may consume more than 1 GiBi byte = 1024^3 bytes of memory
+
+You may not make any assumption on the number of cells except that there is less than 2^32.
