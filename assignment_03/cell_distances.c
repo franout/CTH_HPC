@@ -55,7 +55,6 @@ int main (int argc , char ** argv ) {
 		}
 	}
 	omp_set_num_threads(N_THREAD);
-#pragma omp declare reduction (insertion_list : float  : add_to_list( omp_in ))
 
 	work_string=(char *)calloc(BUFFER_SIZE, sizeof(char));
 	work_string_2=(char *)calloc(BUFFER_SIZE,sizeof(char));
