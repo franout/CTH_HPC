@@ -67,28 +67,29 @@
 **Overall layout**
 The main goal of assignment 3 is to compute and count distances between points in 3-dimensional space, using OpenMP as instructed in the problem's implementation details on the course website.
 The output of the program will be printed on standard output, which will consist of two column, the first being the distance between the two 3-dimensional points and the second the number of times this distance was computed among all distances.
+Pratically speaking, it consists into a master thread which will take into account the reading from files, and the printing to standard output, and a team of threads which will compute the distance and update the relative index in the data structure
 
-* Input
+**Input**
  The points in the 3-dimensional space are given in a file. To read this file we have to analyze it with
  the help of fread(), fseek() and so on. The input coordinates are read as strings and saved into two buffers (window on the file),partially overlapped. Then the strings are parsed for computing the distances saving the points as floats, every window is parsed and combined with the other points from the other window. Exploiting the fact that the distances are symmetric, the number of distance calculation will be (n^2)/2 with n the number of points into the file.
  
-** Division of Subtasks **
+**Division in subtasks**
 
-* Read and parsing the file
+* Read and parsing the file:
  We read from the file to a buffer of size 2048 bytes, so that we load efficient chunks of data into RAM. Loading the whole file into memory would not be feasible because even if it fits space for program code will be scarse, and especially frequently used commands will not have enough space available making the execution way slower.
  
-* Computation of the distances and increment of the corresponding counts
+* Computation of the distances and increment of the corresponding counts:
 Thanks to the fixed inputs, it can be computed the maximum distance that out program will calculate ( 346.40 ) from the formula of the euclidian distance.  This allows to create a vector of length 34640( all the possible distances with a difference of 1/100 ), implicitly sorted and for each and every entries the numbers of occurencies of the given index (distance*100) will be saved ( reducing the critical section of our program in the parallel part ) 
 
-* Output
+* Output :
  For printing the results we are using fprintf() and post the result to the stdout. Printing the distance values and its relative frequency.
 
-* Memory management
+* Memory management :
  The assumption are that the fixed input points is respected, allowing also to simplification in terms of buffers used for parsing the file.
 The buffers,or windows, are built in such a way that they are reducing the number of total disk acess and in the meanwhile they are able to create all the possible combinations between points, thus calculation of distances.
 For this reason, the windows are capable of store at each time 1000 points (2400 bytes) as strings since it is known that the length of a row is 24 bytes.
 
 
-* Parallelization
+* Parallelization:
 The parallelization will occure when the two windows have to be parsed, the outmost loop will be executed by just one single thread while the innermost loop will be the real parallelized part, which will also containt the critical section ( the update of the frequency's vector). It is well known that in a cuncurrent enviroment the bottleneck is the critical section and the duration of its duration can seriosly create performance problem but in our case the update operation (the critical section) is just an increment of the by one of an entry of a vector, with a constant access time, which means a very short critical section that leads to an overall increase of the program's performances.
 
