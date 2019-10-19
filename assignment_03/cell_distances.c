@@ -7,23 +7,18 @@
 #include <string.h>
 #define INPUT_FILE "./cell_e4"
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 72
-
-/*ordered linked list definition */
-typedef struct node * node_p;
-
-struct node {
-	int occ;
-	char value[5+1]; // length of string + \0
-	node_p next;
-}node;
+#define BUFFER_SIZE 2400
 
 
-// function for free memory
-static void free_list(node_p  element) ;
 
-static void add_to_list(node_p *  head, float  value);
+typedef struct {
+	int * occ;
 
+	int n;
+
+}table_t;
+
+static table_t map;
 
 
 
@@ -31,13 +26,12 @@ int main (int argc , char ** argv ) {
 
 	int N_THREAD=0;
 	int option=0;
-	float x1,x2,y1,y2,z1,z2, tmp1,tmp2,tmp3;
-	float dist,temp,sqrt;
+	float x1,x2,y1,y2,z1,z2;
+	float dist;
 	char* work_string,* work_string_2,*tmps,*tmps2; // +\n + \0
 	long int read_char,read_char_2;
 	FILE * fp,*fp_1;
-	node_p head=NULL;
-	node_p x;
+
 	/*it returns the parsed char and as third arg it requires the separation char for arguments*/
 	while ((option = getopt(argc,argv,"t:"))!=-1) {
 
@@ -54,8 +48,8 @@ int main (int argc , char ** argv ) {
 	}
 	omp_set_num_threads(N_THREAD);
 
-	work_string=(char *)calloc(BUFFER_SIZE, sizeof(char));
-	work_string_2=(char *)calloc(BUFFER_SIZE,sizeof(char));
+	work_string=(char *)calloc(BUFFER_SIZE+1, sizeof(char));
+	work_string_2=(char *)calloc(BUFFER_SIZE+1,sizeof(char));
 	tmps=(char *)calloc(ROW_L+1, sizeof(char));
 	tmps2=(char *) calloc(ROW_L+1,sizeof(char));
 	if(work_string==NULL || work_string_2==NULL || tmps==NULL|| tmps2==NULL) {
@@ -68,78 +62,51 @@ int main (int argc , char ** argv ) {
 		fprintf(stderr,"errror opening the file\n");
 		exit(-1);
 	}
-	int i=1;
-	x1=y1=z1=x2=y2=z2=tmp1=tmp2=tmp3=read_char=read_char_2=0;
-	fseek(fp_1,i*(ROW_L),SEEK_SET);
+	map.n=34640; // fp *100 -> max reacheable value of distance, with fixed input format
+	map.occ=(int *) malloc(sizeof(int)*map.n);
+	for(int i=0;i<map.n;i++){
+		map.occ[i]=0;
+	}
+
+	x1=x2=y2=y1=z1=z2=read_char=read_char_2=0;
+	fseek(fp_1,(ROW_L),SEEK_SET);
 
 	while ((read_char=fread( work_string,sizeof(char), BUFFER_SIZE,fp ))>0) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-#pragma omp single
+
 
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
-				/*
-				   sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
-				   x2+=tmp1*1000;
-				   y2+=tmp2*1000;
-				   z2+=tmp3*1000;
-				   */				  
-
 				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
-
-#pragma omp parallel for shared(x2,y2,z2,work_string_2,kb) private(sqrt,temp,x1,y1,z1) schedule(runtime)
-
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
-					/*					sscanf(tmps2,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
-										x1+=tmp1*1000;
-										y1+=tmp2*1000;
-										z1+=tmp3*1000;
-					// compute distance
-					dist=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));*/ 
+
 					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
-					dist=((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
+
+					dist=sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
 					// add to a list CRITICAL section
-					//	printf("%.3f\n",dist);
-					sqrt = dist / ((float)2);
-					temp = 0;
-
-					// Iterate until sqrt is different of temp, that is updated on the loop
-					while(sqrt != temp){
-						// initially 0, is updated with the initial value of 128
-						// (on second iteration = 65)
-						// and so on
-						temp = sqrt;
-						// Then, replace values (256 / 128 + 128 ) / 2 = 65
-						// (on second iteration 34.46923076923077)
-						// and so on
-						sqrt = ( dist/temp + temp) / 2;
-					}
-#pragma omp critical (list_insertion)
-
-					add_to_list ( &head, sqrt); 
+				//	printf("%.3f\n",dist);
+					map.occ[(int)(dist*100)]++;
 				}
 			}
 			j++;
 
 		}
 		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
-		i++;
+			}
+
+	for(int i=0;i<map.n;i++) {
+		int occ=map.occ[i];
+	if(occ>=1) {
+	fprintf(stdout,"%.2f %d\n",i/100.00,occ);
+	
 	}
-
-	// printing ordered list
-	for(x=head; x!=NULL;x=x->next) {
-		printf("%s %d\n", x->value,x->occ);
 	}
-
-
-
-
-	free_list(head);
+	free(map.occ);
 	free(tmps);
 	free(tmps2);
 	free(work_string);
@@ -152,66 +119,5 @@ int main (int argc , char ** argv ) {
 	}
 
 	return 0;
-}
-
-static void add_to_list(node_p *head, float value){
-	node_p x,y,new_node;
-	char str[6];
-	int diff;
-	if(value<9.99) {
-		sprintf(str,"0%.2f",value);
-	}else {
-		sprintf(str,"%.2f",value);
-	}
-	new_node=(node_p ) malloc(sizeof(struct node));
-	new_node-> occ=1;
-	strcpy(new_node->value,str);
-	new_node->next=NULL;
-
-	if(*head==NULL) {
-		*head=new_node;
-	}
-	//TODO 	CHECKinsertion of last element
-	else {
-
-		for(x=(*head)->next, y=*head;x!=NULL && (diff= strcmp(str,x->value))>=0 ;y=x, x=x->next) {
-			if ( diff==0) {
-				y->occ++;
-				free(new_node);
-				new_node=NULL;
-				break;
-			}
-
-		}
-		if(new_node!=NULL) {
-			diff=strcmp(str,y->value);
-			if(diff>0) {
-				new_node->next=x;
-				y->next=new_node;
-
-
-			}else if ( diff<0) {
-				new_node->next=y;
-				*head=new_node;
-			}
-			/*			new_node->next=x;
-						y->next=new_node;
-						*/
-		}
-	}
-
-
-	return ;
-}
-
-
-static void free_list(node_p element) {
-
-	if(element==NULL) {
-		return;
-	}
-
-	free_list(element->next);
-	free(element);
 }
 
