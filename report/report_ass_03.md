@@ -11,11 +11,7 @@
   Moreover, stack allocated memory is thread local and therefore provides an
   opportunity to untangle the mutual impact of parallel threads on one another.
   Consequentially, it is an important consideration to employ stack allocated
-  memory in the innermost iteration steps, i.e., the Newton iteration for an
-  individual point on the complex plane.
-
-  We plan to test this concept by comparing runtimes of variants of our program
-  using stack and heap allocated memory in the innermost iteration steps.
+  memory in the innermost iteration steps.
 
 **Dynamic memory and memory fragmentation**
   Fragmentation can occur when we allocate dynamic memory in noncontiguous blocks.
@@ -28,11 +24,11 @@
 **Reading and writing files**
   Files can be read with fread() and written with fwrite(). These functions are
   less complex than fscanf() or fprint() and therefore faster. fwrite() and fread()
-  are using buffer to write or read. This results in faster computation.
+  are using buffer to write or read. This results in a reduced numbers of disk access and as consequence an increase into the performance.
   
 **Command line arguments**
   It is possible to pass arguments to a program via command line. If intended, these
-  additional inputs allow the user to change the program behaviour.
+  additional inputs allow the user to change the program behaviour, in our case it will only define the maximum number of threads.
   POSIX library contains an easy way to implement the parsing of command line arguments.
 
 **Locality**
@@ -47,7 +43,6 @@
   It is important to remember, that accessing data from different parts of the memory
   will always take more time than accessing data from cache.
 
-  In the assignments we looked at techniques like loop unrolling to optimize performance. 
 
 **Alignment and Padding**
   Different types of variables require different amounts of memory. Variables should be declared
@@ -57,7 +52,7 @@
 **HDD vs SSD**
   While a single SSD is generally faster than an HDD gantenbein uses one SSD and a HDD-raid.
   As seen in the tests of Assignment 1, this raid increases performance of the HDDs leading
-  to a similar performace as the SSD. Therefore the operation for writing files should not have
+  to a similar performace as the SSD. Therefore the operation for writing and reading files should not have
   a big overhead.
 
 **OpenMP**
@@ -66,12 +61,12 @@
 
  OpenMP is suitable for fine-grained parallelism. Compared to POSIX threads it provides the possibility of a much shorter and more decriptive code implementation.
  
- Threads are the primary means for parallel computation. Each thread is a schedulable entity within which a sequence of instructions are executed, it has private variables and internal control at its disposal. OpenMP provides the flexibility to define the type of scheduling the programmer prefers. This is done in an efficient and concise code. Specified pragmas are used to define the characteristics of the parallelization tailored for a specific proram. Furthermore, offloading can be used as a simple way to exploit co-processors. On each device there could be a team of threds adjusted to execute a specific type of problem. The collection of the teams of threads is a league. For instance, a for loop can be split over a number of teams, together constituting a league that is executing the whole loop in parallel.
+ Threads are the primary means for parallel computation. Each thread is a schedulable entity within which a sequence of instructions are executed, it has private variables and internal control at its disposal. OpenMP provides the flexibility to define the type of scheduling the programmer prefers. This is done in an efficient and concise code. Specified pragmas are used to define the characteristics of the parallelization tailored for a specific proram. Furthermore, offloading can be used as a simple way to exploit co-processors. On each device there could be a team of threads adjusted to execute a specific type of problem. The collection of the teams of threads is a league,one for each device. For instance, a for loop can be split over a number of threads, together constituting a team that is executing the whole loop in parallel.
 
 ## Intended program layout
 **Overall layout**
 The main goal of assignment 3 is to compute and count distances between points in 3-dimensional space, using OpenMP as instructed in the problem's implementation details on the course website.
-The output of the program will be printed on the command terminal, which will consist of two column, the first being the distance between the two 3-dimational points and the second the number of times this distance was computed among all distances.
+The output of the program will be printed on standard output, which will consist of two column, the first being the distance between the two 3-dimensional points and the second the number of times this distance was computed among all distances.
 
 * Input
  The points in the 3-dimensional space are given in a file. To read this file we have to analyze it with
