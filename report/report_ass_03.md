@@ -84,9 +84,10 @@ The output of the program will be printed on the command terminal, which will co
 ** Division of Subtasks **
 
 * Read and parsing the file
-
+ We read from the file to a buffer of size 64 bytes, so that we load efficient chunks of data into RAM. Loading the whole file into memory would not be feasible because even if it fits space for program code will be scarse, and especially frequently used commands will not have enough space available making the execution way slower.
+ 
 * Computation of the distances and increment of the corresponding counts
- Use Pointers for better performance exploiting OmpenMP this way
+ Use Pointers for better performance exploiting OmpenMP this way.
  Babylonial method for the square root turns out to be slower so we used the sqrt() function.
  We use the flots as the data tyoe for the program
 
@@ -95,28 +96,21 @@ The output of the program will be printed on the command terminal, which will co
  value is added.
 
 * Output
- For printing the results we are using fprintf() and post the result to the stdout. Manipulating the
- string while printing can be useful to avoid a conversion from int to float. Since this counts more
- as a "quick-and-dirty" solution it should be properly discussed.
+ For printing the results we are using fprintf() and post the result to the stdout. Manipulating the string while printing can be useful to avoid a conversion from int to float. Since this counts more as a "quick-and-dirty" solution it should be properly discussed.
 
 
 
 * Memory management
-Sorting
- Linked list
+ 
+The programm at no time may consume more than 1 GiBi byte = 1024^3 = 1073741824 bytes of memory bytes of memory bytes of memory
+
+We were given that we may not make any assumption on the number of cells except that there is less than 2^32.
+
+The total size of out binary file is 23584.
+The total size of our
 
 
 * Parallelization
  OpenML
 
 
-
-
-
-**Resolution of each subtask**.
-
-**Implementation Details**
-
-The programm at no time may consume more than 1 GiBi byte = 1024^3 bytes of memory
-
-You may not make any assumption on the number of cells except that there is less than 2^32.
