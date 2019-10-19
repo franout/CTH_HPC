@@ -69,10 +69,11 @@ The main goal of assignment 3 is to compute and count distances between points i
 The output of the program will be printed on standard output, which will consist of two column, the first being the distance between the two 3-dimensional points and the second the number of times this distance was computed among all distances.
 
 * Input
+
  The points in the 3-dimensional space are given in a file. To read this file we have to analyze it with
  the help of fread(), fseek() and so on. The input coordinates are read as strings and saved into two buffers (window on the file),partially overlapped. Then the strings are parsed for computing the distances saving the points as floats, every window is parsed and combined with the other points from the other window. Exploiting the fact that the distances are symmetric, the number of distance calculation will be (n^2)/2 with n the number of points into the file.
  
-** Division of Subtasks **
+**Division of Subtasks**
 
 * Read and parsing the file
  We read from the file to a buffer of size 2048 bytes, so that we load efficient chunks of data into RAM. Loading the whole file into memory would not be feasible because even if it fits space for program code will be scarse, and especially frequently used commands will not have enough space available making the execution way slower.
