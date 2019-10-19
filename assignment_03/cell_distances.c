@@ -5,11 +5,9 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-#define INPUT_FILE "./cell_e4"
+#define INPUT_FILE "./cell_e5"
 #define ROW_L 24// length of row  + \n
 #define BUFFER_SIZE 2400
-
-
 
 typedef struct {
 	int * occ;
@@ -26,8 +24,7 @@ int main (int argc , char ** argv ) {
 
 	int N_THREAD=0;
 	int option=0;
-	float x1,x2,y1,y2,z1,z2;
-	float dist;
+	int x1,x2,y1,y2,z1,z2,tmp1,tmp2,tmp3, dist;
 	char* work_string,* work_string_2,*tmps,*tmps2; // +\n + \0
 	long int read_char,read_char_2;
 	FILE * fp,*fp_1;
@@ -75,22 +72,32 @@ int main (int argc , char ** argv ) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-
-
+#pragma omp single
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
-				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
+				//sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
+				sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
+				x2+=tmp1*1000;	y2+=tmp2*1000;	z2+=tmp3*1000;
+
+#pragma omp parallel for shared(kb,x2,y2,z2,read_char_2,map) private(x1,y1,z1,dist)
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
+				sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
+				x1+=tmp1*1000;	y1+=tmp2*1000;	z1+=tmp3*1000;
 
-					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
 
-					dist=sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
+
+//					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
+
+					//dist=sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
+					dist=(int) (100*sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)));
+
 					// add to a list CRITICAL section
 				//	printf("%.3f\n",dist);
-					map.occ[(int)(dist*100)]++;
+#pragma omp atomic
+					map.occ[dist]++;
 				}
 			}
 			j++;
