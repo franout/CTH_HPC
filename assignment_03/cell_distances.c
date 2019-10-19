@@ -72,30 +72,20 @@ int main (int argc , char ** argv ) {
 		int j=1;
 		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
 			// parallel part
-#pragma omp single
+#pragma omp single 
+
 			// if too slow switch second reading loop with the parsing buffer loop
 			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
 				memcpy(tmps,work_string+kb,ROW_L);
-				//sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
 				sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x2,&tmp2,&y2,&tmp3,&z2);
 				x2+=tmp1*1000;	y2+=tmp2*1000;	z2+=tmp3*1000;
-
-#pragma omp parallel for shared(kb,x2,y2,z2,read_char_2,map) private(x1,y1,z1,dist)
+#pragma omp parallel for shared(kb,x2,y2,z2,read_char_2,map,work_string_2) private(x1,y1,z1,dist) 
 				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
 
 					memcpy(tmps2,work_string_2+kb_i,ROW_L);;
-				sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
-				x1+=tmp1*1000;	y1+=tmp2*1000;	z1+=tmp3*1000;
-
-
-
-//					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
-
-					//dist=sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1));
+					sscanf(tmps,"%d.%d %d.%d %d.%d\n",&tmp1,&x1,&tmp2,&y1,&tmp3,&z1);
+					x1+=tmp1*1000;	y1+=tmp2*1000;	z1+=tmp3*1000;
 					dist=(int) (100*sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)));
-
-					// add to a list CRITICAL section
-				//	printf("%.3f\n",dist);
 #pragma omp atomic
 					map.occ[dist]++;
 				}
@@ -104,14 +94,14 @@ int main (int argc , char ** argv ) {
 
 		}
 		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
-			}
+	}
 
 	for(int i=0;i<map.n;i++) {
 		int occ=map.occ[i];
-	if(occ>=1) {
-	fprintf(stdout,"%.2f %d\n",i/100.00,occ);
-	
-	}
+		if(occ>=1) {
+			fprintf(stdout,"%.2f %d\n",i/100.00,occ);
+
+		}
 	}
 	free(map.occ);
 	free(tmps);
