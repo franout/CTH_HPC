@@ -5,7 +5,7 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
-#define INPUT_FILE "./cell_e4"
+#define INPUT_FILE "./cells"
 #define ROW_L 24// length of row  + \n
 #define BUFFER_SIZE  24000
 
@@ -39,7 +39,7 @@ int main (int argc , char ** argv ) {
 	omp_set_num_threads(N_THREAD);
 	work_string=(char *)calloc(BUFFER_SIZE+1, sizeof(char));
 
-//#pragma omp declare reduction (int_occ : int  : map.occ[omp_in]++ )
+	//#pragma omp declare reduction (int_occ : int  : map.occ[omp_in]++ )
 
 
 
@@ -81,23 +81,29 @@ int main (int argc , char ** argv ) {
 
 
 	}
-
-#pragma omp parallel for shared (points,point) private (dist) reduction(+:occ[:n])
-	for(int i=0;i<points-1;i++) {
-		for(int j=i+1;j<points;j++) {
-
-			dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
-			//		printf("%d\n",dist);
-
-			occ[dist]++;				
-
+	if(N_THREAD>1){
+#pragma omp parallel for shared (points,point) private (dist) schedule(static,60) reduction(+:occ[:n])
+		for(int i=0;i<points-1;i++) {
+			for(int j=i+1;j<points;j++) {
+				dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
+				//		printf("%d\n",dist);
+				occ[dist]++;				
+			}
 
 		}
+	}else {
+		for(int i=0;i<points-1;i++) {
+			for(int j=i+1;j<points/3;j++) {
+				dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
 
+				occ[dist]++;				
+				dist=roundf(100*sqrtf( (point[i][0]-point[j+1][0])*(point[i][0]-point[j+1][0])+(point[i][1]-point[j+1][1])*(point[i][1]-point[j+1][1]) + (point[i][2]-point[j+1][2])*(point[i][2]-point[j+1][2])  ));
+
+				occ[dist]++;				
+				dist=roundf(100*sqrtf( (point[i][0]-point[j+2][0])*(point[i][0]-point[j+2][0])+(point[i][1]-point[j+2][1])*(point[i][1]-point[j+2][1]) + (point[i][2]-point[j+2][2])*(point[i][2]-point[j+2][2])  ));
+			}
+		}
 	}
-
-
-
 	for(int i=0;i<n;i++) {
 		if(i<1000) {
 			fprintf(stdout,"0%.2f %d\n",((float)(i))/100,occ[i]);
