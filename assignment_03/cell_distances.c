@@ -8,7 +8,6 @@
 #define INPUT_FILE "./cells"
 #define ROW_L 24// length of row  + \n
 #define BUFFER_SIZE 2400
-
 typedef struct {
 	int * occ;
 
