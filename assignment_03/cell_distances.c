@@ -81,6 +81,7 @@ int main (int argc , char ** argv ) {
 
 
 	}
+	free(work_string);
 	if(N_THREAD>1){
 #pragma omp parallel for shared (points,point) private (dist) schedule(static,60) reduction(+:occ[:n])
 		for(int i=0;i<points-1;i++) {
@@ -114,6 +115,13 @@ int main (int argc , char ** argv ) {
 		}
 
 	}
+
+/*free memory*/
+	for(int i=0;i<points;i++) {
+	free(point[i]);
+	
+	}
+	free(point);
 
 	free(occ);
 	free(tmps);
