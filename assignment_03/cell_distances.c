@@ -7,7 +7,7 @@
 #include <string.h>
 #define INPUT_FILE "./cells"
 #define ROW_L 24// length of row  + \n
-#define BUFFER_SIZE 2400
+#define BUFFER_SIZE 240000
 typedef struct {
 	int * occ;
 
@@ -24,8 +24,8 @@ int main (int argc , char ** argv ) {
 	int N_THREAD=0;
 	int option=0;
 	float x1,x2,y1,y2,z1,z2;
-	 int	dist;
-	char* work_string,* work_string_2,*tmps,*tmps2; // +\n + \0
+	int	dist;
+	char* work_string,* work_string_2,tmps2[ROW_L+1]; // +\n + \0
 	long int read_char,read_char_2;
 	FILE * fp,*fp_1;
 
@@ -40,15 +40,14 @@ int main (int argc , char ** argv ) {
 			default:
 				fprintf(stdout,"no valid arguments\n");
 				exit(-1);
-
 		}
 	}
 	omp_set_num_threads(N_THREAD);
 	work_string=(char *)calloc(BUFFER_SIZE+1, sizeof(char));
 	work_string_2=(char *)calloc(BUFFER_SIZE+1,sizeof(char));
-	tmps=(char *)calloc(ROW_L+1, sizeof(char));
-	tmps2=(char *) calloc(ROW_L+1,sizeof(char));
-	if(work_string==NULL || work_string_2==NULL || tmps==NULL) {
+
+//	tmps2=(char *) calloc(ROW_L+1,sizeof(char));
+	if(work_string==NULL || work_string_2==NULL ) {
 		fprintf(stderr,"error allocating strings\n");
 		exit(-1);
 	}
@@ -67,34 +66,34 @@ int main (int argc , char ** argv ) {
 	x1=x2=y2=y1=z1=z2=read_char=read_char_2=0;
 	fseek(fp_1,(ROW_L),SEEK_SET);
 
+
 	while ((read_char=fread( work_string,sizeof(char), BUFFER_SIZE,fp ))>0) {
-		int j=1;
-		while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
-			// parallel part
-#pragma omp single
-
-			// if too slow switch second reading loop with the parsing buffer loop
-			for(int kb=0;kb<read_char-ROW_L;kb+=ROW_L) {
-				memcpy(tmps,work_string+kb,ROW_L);
-				sscanf(tmps,"%f %f %f\n",&x2,&y2,&z2);
-#pragma omp parallel for shared(kb,x2,y2,z2,read_char_2,map,work_string_2) private(x1,y1,z1,dist)
-
-				for(int kb_i=kb;kb_i<read_char_2;kb_i+=ROW_L) {
-					memcpy(tmps2,work_string_2+kb_i,ROW_L);
-					sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
-					//TODO error in approximation of numbers
-					dist=round(sqrt(10* ((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)) ));
-/*					fprintf(stdout,"%lf %f  %f\n",sqrt( (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1) ),sqrt( (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1) ),sqrtf( (x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1) ));*/
-#pragma omp atomic
+//#pragma omp parallel for shared(read_char, work_string,map) private (dist,x2,y2,z2,x1,y1,z1,read_char_2) firstprivate(work_string_2,tmps,tmps2) 
+		for(int kb=0;kb<read_char;kb+=ROW_L) {
+				memcpy(tmps2,work_string+kb,ROW_L);
+				sscanf(tmps2,"%f %f %f\n",&x2,&y2,&z2);
+				int j=1;
+				while((read_char_2=fread(work_string_2,sizeof(char),BUFFER_SIZE,fp_1))>0) {
+					// parallel part
+#pragma omp parallel for shared ( read_char_2,kb,x2,y2,z2,work_string_2,z1,x1,y1) firstprivate(tmps2)
+					for(int kb_i=0;kb_i<read_char_2;kb_i+=ROW_L) {
+						memcpy(tmps2,work_string_2+kb_i,ROW_L);
+						sscanf(tmps2,"%f %f %f\n",&x1,&y1,&z1);
+						dist=roundf(100*sqrtf((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)+(z2-z1)*(z2-z1)) );
+				printf("%d\n",dist);
+#pragma omp critical
 					map.occ[dist]++;				
+					}
+					j++;
 				}
+
+		fseek(fp_1,-(j-2)*BUFFER_SIZE+ROW_L,SEEK_CUR);
+
 			}
-			j++;
+	
 
-		}
-		fseek(fp_1,-(ROW_L)*(j-2),SEEK_CUR);
 	}
-
+exit(-1);
 	for(int i=0;i<map.n;i++) {
 		int occ=map.occ[i];
 		if(occ>0){
@@ -107,8 +106,6 @@ int main (int argc , char ** argv ) {
 			}}
 	}
 	free(map.occ);
-	free(tmps);
-	free(tmps2);
 	free(work_string);
 	free(work_string_2);
 	fclose(fp);
