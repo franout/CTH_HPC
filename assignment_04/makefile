@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS =  -O2 -march=native
-OCL = -lOpenCL
+OCL = -lOpenCL -lm
 
 .PHONY: all clean test
 
@@ -8,7 +8,8 @@ all: heat_diffusion
 
 heat_diffusion: heat_diffusion.c
 	$(CC) $(CFLAGS) $(OPT) -o heat_diffusion heat_diffusion.c $(OCL)
-
+execute: heat_diffusion
+	./heat_diffusion -d 0.2 -n 100
 clean:
 	rm -f *.out heat_diffusion
 
@@ -27,4 +28,4 @@ test: pack
 	/home/hpc2019/a4_grading/check_submission.py ./heat_diffusion.tar.gz
 
 pack: heat_diffusion
-	tar czf ./heat_diffusion.tar.gz ./heat_diffusion.c ./makefile
+	tar czf ./heat_diffusion.tar.gz ./heat_diffusion.c ./makefile ./heat_diffusion.cl
