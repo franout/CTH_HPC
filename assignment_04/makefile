@@ -20,10 +20,15 @@ performance: heat_diffusion
 	#### Number of iterations 	100000 		1000 		200	     ######
 	#### Time in seconds 	 	1.65 		97.6 		1.4	     ######
 	###################################################################################
+	mv diffusion_100_100 ./diffusion
 	hyperfine -r 10  './heat_diffusion -n100000 -d0.01'
+	mv diffusion ./diffusion_100_100
+	mv diffusion_10000_1000 ./diffusion
 	hyperfine -r 10 './heat_diffusion -d 0.02 -n 1000'
+	mv diffusion ./diffusion_10000_10000
+	mv diffusion_100000_100 ./diffusion
 	hyperfine -r 10 './heat_diffusion -d 0.6 -n 200'
-
+	mv ./diffusion ./diffusion_100000_100
 test: pack 
 	/home/hpc2019/a4_grading/check_submission.py ./heat_diffusion.tar.gz
 
