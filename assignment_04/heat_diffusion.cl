@@ -1,8 +1,7 @@
 
-__kernel void compute_diffusion ( __global float **data, const int row, const int columns, const double  diff_c ,  ){
+__kernel void compute_diffusion ( __global float *data,  const double  diff_c, const int rows, const int columns, int iteration_numb ){
 
-
-/*kernel is afunction or a task to do Saved as a separate file (typically ending in .cl) and loaded on runtime */
+// even if data is a matrix it is transformed into a long array -> array parallelism of gpu
 int ix=row+get_global_id(0);
 int jy=column+get_global_id(0);
 
@@ -17,6 +16,18 @@ float h=data[ix][jy];
 float local_t=h+diff_c(ha+hb+hl+hr/4*h);
 
 
+
+
+}
+
+
+__kernel void compute_average(__global float * data, const int rows, const int columns ,__global float * avg) {
+
+
+
+}
+
+__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,const float * average ) {
 
 
 }
