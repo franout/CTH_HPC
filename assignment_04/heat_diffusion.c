@@ -57,11 +57,19 @@ int main (int argc , char ** argv )
 	}	
 	fclose(fp);
 	if(fp==NULL) {
-	fprintf(stderr,"error closing the file\n");
-	exit(-1);
+		fprintf(stderr,"error closing the file\n");
+		exit(-1);
 	}
 
-
+	/*SET UP open cl*/
+	/*platform*/
+	cl_device_id device_id;
+	cl_uint nmb_devices;
+	if (clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1,
+				&device_id, &nmb_devices) != CL_SUCCESS) {
+		printf( "cannot get device\n" );
+		return 1;
+	}
 	/*device */	
 	cl_int error;
 
@@ -72,14 +80,7 @@ int main (int argc , char ** argv )
 		return 1;
 	}
 
-	/*platform*/
-	cl_device_id device_id;
-	cl_uint nmb_devices;
-	if (clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1,
-				&device_id, &nmb_devices) != CL_SUCCESS) {
-		printf( "cannot get device\n" );
-		return 1;
-	}
+
 	/*context*/
 
 	cl_context context;
@@ -91,11 +92,12 @@ int main (int argc , char ** argv )
 	};
 	context = clCreateContext(properties, 1, &device_id, NULL, NULL, &error);
 
-
-	clReleaseContext(context);
-
-
-	/*command queue*/
+	/*command queue-> for sendig comman to the device 
+	 *
+	 *The command queue takes memory writes and reads, and kernel execution
+	 * 
+	 * i.e. execution is controlled by command queue
+	 * */
 
 	cl_command_queue command_queue;
 	command_queue = clCreateCommandQueue(context, device_id, 0, &error);
@@ -104,7 +106,6 @@ int main (int argc , char ** argv )
 		return 1;
 	}
 
-	clReleaseCommandQueue(command_queue);
 
 	/*open cl program command stored in a string */
 
@@ -117,11 +118,45 @@ int main (int argc , char ** argv )
 		cl_kernel kernel;
 	kernel = clCreateKernel(program, "dot_prod_mul", &error);
 
-	clReleaseProgram(program);
-	clReleaseKernel(kernel);
 
 
-	/*error checjign*/
+	
+
+		/*memory reserved as buffers*/
+		const size_t ix_m = 10e7;
+		cl_mem input_buffer_a, input_buffer_b, output_buffer_c;
+		input_buffer_a  = clCreateBuffer(context, CL_MEM_READ_ONLY,
+				                    sizeof(float) * ix_m, NULL, &error);
+		input_buffer_b  = clCreateBuffer(context, CL_MEM_READ_ONLY,
+				                    sizeof(float) * ix_m, NULL, &error);
+		output_buffer_c = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+					sizeof(float) * ix_m, NULL, &error);
+
+
+		/*three last arguments are used for synchronization ( events ) */
+		/*enqueuing writing buffers*/
+		clEnqueueWriteBuffer(command_queue, input_buffer_a, CL_TRUE,
+				  0, ix_m*sizeof(float), a, 0, NULL, NULL);
+		clEnqueueWriteBuffer(command_queue, input_buffer_b, CL_TRUE,
+				  0, ix_m*sizeof(float), b, 0, NULL, NULL);
+
+
+/*enqueuing kernel */
+		clSetKernelArg(kernel, 0, sizeof(cl_mem), &input_buffer_a);
+		clSetKernelArg(kernel, 1, sizeof(cl_mem), &input_buffer_b);
+		clSetKernelArg(kernel, 2, sizeof(cl_mem), &output_buffer_c);
+
+clEnqueueNDRangeKernel(command_queue, kernel, dimension,
+		  global_offsets, global_sizes, local_sizes, 0, NULL, NULL);
+
+
+		clReleaseMemObject(input_buffer_a);
+		clReleaseMemObject(input_buffer_b);
+		clReleaseMemObject(output_buffer_c);
+		//TODO use opencl data types
+
+
+	/*error checking -> build log of the kernel*/
 
 	error = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
 	if (error != CL_SUCCESS) {
@@ -143,36 +178,18 @@ int main (int argc , char ** argv )
 
 		free(log);
 
-		return 1;
+		/*release memory*/
+	clReleaseProgram(program);
+	clReleaseKernel(kernel);
+	clReleaseCommandQueue(command_queue);
+		clReleaseContext(context);
 
-
-		/*memory reserved as buffers*/
-
-		//TODO use opencl data types
-		
-
-
-
-
-	for(int i=0;i<h;i++) {
-	free(matrix[i]);
-	}
-	free(matrix);
+		for(int i=0;i<h;i++) {
+			free(matrix[i]);
+		}
+		free(matrix);
 
 		return 0;
 	}
 
 
-
-	/*kernel is afunction or a task to do Saved as a separate file (typically ending in .cl) and loaded on runtime */
-
-	__kernel void
-		dot_prod_mul(
-				__global const float * a,
-				__global const float * b,
-				__global float * c
-			    )
-		{
-			int ix = get_global_id(0);
-			c[ix] = a[ix] * b[ix];
-		}
