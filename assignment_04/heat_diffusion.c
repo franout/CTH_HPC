@@ -5,6 +5,9 @@
 #define CL_KERNEL_FILE "./heat_diffusion.cl"
 #define INPUT_FILE "./try.txt"
 #define MAX_KERNEL_SIZE 31457280 // 30 Mbytes
+
+
+#define ARRAY_MATRIX 1
 #define DEBUG 1
 
 
@@ -25,7 +28,12 @@ int main (int argc , char ** argv )
 	int ret;
 	int option=0;
 	int h,w,x,y;
-	float  ** matrix,val,avg;
+#ifndef ARRAY_MATRIX
+	float  ** matrix;
+#else 
+		float *matrix;
+#endif
+	float val,avg;
 	FILE *fp;
 	char * opencl_program_src;
 	long int size_cl_program=0;
@@ -60,7 +68,7 @@ int main (int argc , char ** argv )
 	fscanf(fp,"%d %d\n",&h,&w);
 	h+=2;
 	w+=2;
-
+#ifndef ARRAY_MATRIX
 	matrix=(float **) malloc ( sizeof(float  *) *h);
 	if(matrix==NULL) {
 		fprintf(stderr,"error allocating matrix\n");
@@ -88,7 +96,19 @@ int main (int argc , char ** argv )
 		matrix[x+1][y+1]=val;
 
 	}
+#else
+       /*calloc allows us to obtain a  clean matrix ( zeros) also with boundaries*/	
+matrix=(float *) calloc(sizeof(float) * h*w);
+if(matrix==NULL) {
+fprintf(stderr,"eerror allocatin the matrix\n");
+exit(-1);
+}
+while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
+ matrix [ (x+1)*w +(y+1) ]=val;
+}
 
+
+#endif
 	fclose(fp);
 	if(fp==NULL) {
 		fprintf(stderr,"error closing the file\n");
@@ -97,7 +117,11 @@ int main (int argc , char ** argv )
 #if DEBUG
 	for(int i=0;i<h;i++) {
 		for(int j=0;j<w;j++) {
+#ifndef ARRAY_MATRIX
 			fprintf(stdout,"%.3f ",matrix[i][j]);
+#else
+			fprintf(stdout,"%.3 ",matrix[ i*w +j]);
+#endif
 		}
 		fprintf(stdout,"\n");
 	}
@@ -262,7 +286,19 @@ int main (int argc , char ** argv )
 		fprintf(stderr,"error setting fourth argument of diffusion kernel\n");
 		exit(-1);
 	}
-	const size_t global[] = {h,w};
+	/*getting number groups and local size for reductions*/
+
+	size_t local_size = 0;
+
+
+	error=clGetKernelWorkGroupInfo(kernel_diffusion, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(size_t), &local_size, NULL);
+
+	if(error != CL_SUCCESS){
+		fprintf(stderr,"error reading the local size of diffusion kernel\n");
+		exit(-1);
+	}	
+
+
 	/*executing the required iterations*/
 	for(size_t step=0;step<required_iterations ;step++) {
 
@@ -272,8 +308,8 @@ int main (int argc , char ** argv )
 			exit(-1);
 		}
 		/*enqueuing kernel */
-		clEnqueueNDRangeKernel(command_queue, kernel_diffusion, 2, 
-				NULL, (const size_t *)&global, NULL, 0, NULL, NULL);
+		clEnqueueNDRangeKernel(command_queue, kernel_diffusion, 1, 
+				NULL, &MATRIX_SIZE, NULL, 0, NULL, NULL);
 		// null after matrix size will allow to choose automatically the size
 
 
@@ -296,9 +332,13 @@ int main (int argc , char ** argv )
 
 #if DEBUG
 	printf("%d %d size\n",h,w);	
-	for(int i=0;i<h;i++) {
-		for(int j=0;i<w;j++) {
+	for(int i=1;i<h-1;i++) {
+		for(int j=1;i<w-1;j++) {
+#ifndef ARRAY_MATRIX 
 			fprintf(stdout,"%.2f ",matrix[i][j]);
+#else
+			fprintf(stdout,"%.2f ", matrix[ i*w + j] );
+#endif
 
 		}
 		fprintf(stdout,"\n");
@@ -306,15 +346,23 @@ int main (int argc , char ** argv )
 	}
 
 #endif
-	avg=0;
+	exit(-1);
+	/*assuring that the divsion matrix_size and local size has no remainder*/
+	while(MATRIX_SIZE%local_size!=0 ){
+		local_size=local_size>>1; // dividing by two
+	}
+
+	size_t nmb_groups = MATRIX_SIZE / local_size;
+
+
 	/*instantiate kernel for computing the average ( also arguments ) */
 	kernel_avg=clCreateKernel(program,"compute_average",&error);
 	if(error!=CL_SUCCESS){
 		fprintf(stderr,"cannot build kernel for average calculation\n");
 		exit(-1);
 	}
-	buffer_out  = clCreateBuffer(context, CL_MEM_READ_WRITE,
-			sizeof(float) , NULL, &error);
+	buffer_out  = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
+			sizeof(float) *nmb_groups, NULL, &error);
 	if(error!=CL_SUCCESS) {
 		fprintf(stderr,"error creating buffer\n");
 		exit(-1);
@@ -327,10 +375,6 @@ int main (int argc , char ** argv )
 		fprintf(stderr,"error enqueuing the write buffer\n");
 		exit(-1);
 
-	}
-	if(clEnqueueWriteBuffer(command_queue,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
-		fprintf(stderr,"error enquieung write buffer for avg\n");
-		exit(-1);
 	}
 	/*setting arguments*/
 
@@ -350,14 +394,34 @@ int main (int argc , char ** argv )
 		fprintf(stderr,"error setting third argument of avg kernel\n");
 		exit(-1);
 	}
-	error=clSetKernelArg(kernel_avg,3,sizeof(cl_mem),&buffer_out);
+	/*no initialization of tmp variable -> null as last arguments*/
+	error=clSetKernelArg(kernel_avg,3,sizeof(float) *local_size,NULL);
+	if(error!=CL_SUCCESS) {
+		fprintf(stderr,"error setting the fourth argument\n");
+		exit(-1);
+	}
+	error=clSetKernelArg(kernel_avg,4,sizeof(cl_mem),&buffer_out);
 	if(error!=CL_SUCCESS){
-		fprintf(stderr,"error setting the fourth argument of avg kernel\n");
+		fprintf(stderr,"error setting the fifth argument of avg kernel\n");
 		exit(-1);
 	}
 	/*executing kernel*/
-	clEnqueueNDRangeKernel(command_queue, kernel_avg, 2, 
-			NULL, (const size_t *)&global, NULL, 0, NULL, NULL);
+	clEnqueueNDRangeKernel(command_queue, kernel_avg, 1, 
+			NULL, (const size_t *)&MATRIX_SIZE, &local_size, 0, NULL, NULL);
+	/*print average temperature*/
+
+	float * partial_sum = malloc(nmb_groups*sizeof(float));
+	if(partial_sum==NULL) {
+		fprintf(stderr,"error allocating partial sums\n");
+		exit(-1);
+	}
+	error=clEnqueueReadBuffer(command_queue, buffer_out, CL_TRUE,
+			0, nmb_groups*sizeof(float), partial_sum, 0, NULL, NULL);
+	if(error!=CL_SUCCESS) {
+		fprintf(stderr,"error reading the partial sums results \n");
+		exit(-1);	
+	}
+
 
 	/*it will wait until there are still some commands in the queue*/
 	if(clFinish(command_queue)!=CL_SUCCESS) {
@@ -365,12 +429,12 @@ int main (int argc , char ** argv )
 		exit(-1);	
 	}
 
-	/*print average temperature*/
-	if(clEnqueueReadBuffer(command_queue,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
-		fprintf(stderr,"error enqueuing the read buffer for avg\n");
-		exit(-1);
-	}
 
+	avg=0;
+	for (size_t ix=0; ix < nmb_groups; ++ix){
+		avg += partial_sum[ix];
+	}
+	avg/=MATRIX_SIZE;
 	fprintf(stdout,"Average temperature: %.2f\n",avg);
 
 
@@ -378,7 +442,11 @@ int main (int argc , char ** argv )
 	avg=0;
 	for(int i=1;i<h-1;i++) {
 		for(int j=1;j<w-1;j++) {
+#ifndef ARRAY_MATRIX
 			avg+=matrix[i][j];	
+#else
+			avg+=matrix[i*w+j];
+#endif
 		}
 
 	}
@@ -402,10 +470,6 @@ int main (int argc , char ** argv )
 		exit(-1);
 
 	}
-	if(clEnqueueWriteBuffer(command_queue,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
-		fprintf(stderr,"error enquieung write buffer for abs matrix\n");
-		exit(-1);
-	}
 	/*setting arguments*/
 
 	error=clSetKernelArg(kernel_matrix_abs_val, 0, sizeof(cl_mem), &buffer);
@@ -424,14 +488,14 @@ int main (int argc , char ** argv )
 		fprintf(stderr,"error setting third argument of abs matrix kernel\n");
 		exit(-1);
 	}
-	error=clSetKernelArg(kernel_matrix_abs_val,3,sizeof(cl_mem),&buffer_out);
+	error=clSetKernelArg(kernel_matrix_abs_val,3,sizeof(float),&avg);
 	if(error!=CL_SUCCESS){
 		fprintf(stderr,"error setting the fourth argument ofabs matrix kernel\n");
 		exit(-1);
 	}
 	/*executing kernel*/
-	clEnqueueNDRangeKernel(command_queue, kernel_matrix_abs_val, 2, 
-			NULL, (const size_t *)&global, NULL, 0, NULL, NULL);
+	clEnqueueNDRangeKernel(command_queue, kernel_matrix_abs_val, 1, 
+			NULL, (const size_t *)&MATRIX_SIZE, NULL, 0, NULL, NULL);
 
 	/*it will wait until there are still some commands in the queue*/
 	if(clFinish(command_queue)!=CL_SUCCESS) {
@@ -445,20 +509,111 @@ int main (int argc , char ** argv )
 	}
 
 	/*print absolute difference between entries of matrix and average tmp*/
-
+#if DEBUG
 	for(int i=1;i<h-1;i++) {
 		for(int j=1;j<w-1;j++) {
-#if DEBUG
+#ifndef ARRAY_MATRIX
 			fprintf(stdout,"%f ",abs(matrix[i][j]-avg));
-#endif
+
+			fprintf(stdout,"%f ",matrix[i][j]);
+#else 
+		fprintf(stdout,"%f ",abs(matrix[i*w + j]-avg));
+
+			fprintf(stdout,"%f ",matrix[i*w+j]);
+
+ #endif
+
 		}
 		fprintf(stdout,"\n");
 
 
 	}
 
+#endif
+	/*computing again the average on the absolute values*/
 
 
+	/*enqueuing writing buffers*/
+	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
+				0, MATRIX_SIZE*sizeof(float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enqueuing the write buffer\n");
+		exit(-1);
+
+	}
+	/*setting arguments*/
+
+	error=clSetKernelArg(kernel_avg, 0, sizeof(cl_mem), &buffer);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting first argument of avg kernel\n");
+		exit(-1);
+	}
+	/* already done 
+	   error=clSetKernelArg(kernel_avg,1,sizeof(int),&h);
+	   if(error!=CL_SUCCESS)	{
+	   fprintf(stderr,"error setting second argument of avg kernel\n");
+	   exit(-1);
+	   }
+	   error=clSetKernelArg(kernel_avg,2,sizeof(int),&w);
+	   if(error!=CL_SUCCESS)	{
+	   fprintf(stderr,"error setting third argument of avg kernel\n");
+	   exit(-1);
+	   }*/
+	/*no initialization of tmp variable -> null as last arguments*/
+	error=clSetKernelArg(kernel_avg,3,sizeof(float) *local_size,NULL);
+	if(error!=CL_SUCCESS) {
+		fprintf(stderr,"error setting the fourth argument\n");
+		exit(-1);
+	}
+	error=clSetKernelArg(kernel_avg,4,sizeof(cl_mem),&buffer_out);
+	if(error!=CL_SUCCESS){
+		fprintf(stderr,"error setting the fifth argument of avg kernel\n");
+		exit(-1);
+	}
+	/*executing kernel*/
+	clEnqueueNDRangeKernel(command_queue, kernel_avg, 1, 
+			NULL, (const size_t *)&MATRIX_SIZE, &local_size, 0, NULL, NULL);
+	/*print average temperature*/
+
+	
+	error=clEnqueueReadBuffer(command_queue, buffer_out, CL_TRUE,
+			0, nmb_groups*sizeof(float), partial_sum, 0, NULL, NULL);
+	if(error!=CL_SUCCESS) {
+		fprintf(stderr,"error reading the partial sums results \n");
+		exit(-1);	
+	}
+
+
+	/*it will wait until there are still some commands in the queue*/
+	if(clFinish(command_queue)!=CL_SUCCESS) {
+		fprintf(stderr,"error in finishing the command queue\n");
+		exit(-1);	
+	}
+
+
+	avg=0;
+	for (size_t ix=0; ix < nmb_groups; ++ix){
+		avg += partial_sum[ix];
+	}
+	avg/=MATRIX_SIZE;
+	fprintf(stdout,"Average temperature: %.2f\n",avg);
+
+
+#if DEBUG
+	avg=0;
+	for(int i=1;i<h-1;i++) {
+		for(int j=1;j<w-1;j++) {
+#ifndef ARRAY_MATRIX
+			avg+=matrix[i][j];	
+#else
+			avg+=matrix[i*w+j];
+#endif
+		}
+
+	}
+	avg/=(h*w);
+	fprintf(stdout,"Average temperature: %.2f\n",avg);
+
+#endif
 
 
 	/*release memory*/
@@ -477,7 +632,7 @@ int main (int argc , char ** argv )
 		free(matrix[i]);
 	}
 	free(matrix);
-
+	free(partial_sum);
 	return 0;
 }
 
