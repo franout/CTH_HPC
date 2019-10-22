@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <math.h>
 #define CL_KERNEL_FILE "./heat_diffusion.cl"
-#define INPUT_FILE "./diffusion"
+#define INPUT_FILE "./try.txt"
 #define MAX_KERNEL_SIZE 31457280 // 30 Mbytes
 #define DEBUG 1
 
@@ -84,7 +84,7 @@ int main (int argc , char ** argv )
 
 	}
 	/*populating matrix reading from file*/
-	while(fscanf(fp,"%d %d %lf\n",&x,&y,&val)!=EOF) {
+	while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
 		matrix[x+1][y+1]=val;
 
 	}
@@ -102,7 +102,7 @@ int main (int argc , char ** argv )
 		fprintf(stdout,"\n");
 	}
 #endif
-exit(-1);
+
 
 	/*loading the kernel file*/
 	fp=fopen(CL_KERNEL_FILE,"r");
@@ -223,7 +223,7 @@ exit(-1);
 	const size_t MATRIX_SIZE = w*h; // plus the two additional row and column
 
 	buffer  = clCreateBuffer(context, CL_MEM_READ_WRITE,
-			sizeof(cl_float) * MATRIX_SIZE, NULL, &error);
+			sizeof(float) * MATRIX_SIZE, NULL, &error);
 	if(error!=CL_SUCCESS) {
 		fprintf(stderr,"error creating buffer\n");
 		exit(-1);
@@ -231,8 +231,8 @@ exit(-1);
 
 	/*three last arguments are used for synchronization ( events ) */
 	/*enqueuing writing buffers*/
-	if(!clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
-				0, MATRIX_SIZE*sizeof(cl_float) , matrix, 0, NULL, NULL)) {
+	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
+				0, MATRIX_SIZE*sizeof(float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the write buffer\n");
 		exit(-1);
 
@@ -244,59 +244,61 @@ exit(-1);
 
 	error=clSetKernelArg(kernel_diffusion, 0, sizeof(cl_mem), &buffer);
 	if(error!=CL_SUCCESS)	{
-		fprintf(stdout,"error setting first argument of diffusion kernel\n");
+		fprintf(stderr,"error setting first argument of diffusion kernel\n");
 		exit(-1);
 	}
-	error=clSetKernelArg(kernel_diffusion,1,sizeof(cl_float),&diffusion_const);
+	error=clSetKernelArg(kernel_diffusion,1,sizeof(float),&diffusion_const);
 	if(error!=CL_SUCCESS)	{
-		fprintf(stdout,"error setting second argument of diffusion kernel\n");
+		fprintf(stderr,"error setting second argument of diffusion kernel\n");
 		exit(-1);
 	}
-	error=clSetKernelArg(kernel_diffusion,2,sizeof(cl_int),&h);
+	error=clSetKernelArg(kernel_diffusion,2,sizeof(int),&h);
 	if(error!=CL_SUCCESS)	{
-		fprintf(stdout,"error setting third argument of diffusion kernel\n");
+		fprintf(stderr,"error setting third argument of diffusion kernel\n");
 		exit(-1);
 	}
-	error=clSetKernelArg(kernel_diffusion,3,sizeof(cl_int),&w);
+	error=clSetKernelArg(kernel_diffusion,3,sizeof(int),&w);
 	if(error!=CL_SUCCESS)	{
-		fprintf(stdout,"error setting fourth argument of diffusion kernel\n");
+		fprintf(stderr,"error setting fourth argument of diffusion kernel\n");
 		exit(-1);
 	}
+	const size_t global[] = {h,w};
+	/*executing the required iterations*/
 	for(size_t step=0;step<required_iterations ;step++) {
 
-		error=clSetKernelArg(kernel_diffusion,4,sizeof(cl_int), &step);
+		error=clSetKernelArg(kernel_diffusion,4,sizeof(int), &step);
 		if(error!=CL_SUCCESS) {
 			fprintf(stderr,"error setting fiveth argument of diffusion kernel\n");
 			exit(-1);
 		}
 		/*enqueuing kernel */
-		//TODO chech arguments 
 		clEnqueueNDRangeKernel(command_queue, kernel_diffusion, 2, 
-				0, 0, 1, 0, NULL, NULL);
-
+				NULL, (const size_t *)&global, NULL, 0, NULL, NULL);
+		// null after matrix size will allow to choose automatically the size
 
 
 	}
 
-
+	/*SYNCHRONIZATION POINT*/
+	/*it will wait until there are still some commands in the queue*/
+	if(clFinish(command_queue)!=CL_SUCCESS) {
+		fprintf(stderr,"error in finishing the command queue\n");
+		exit(-1);	
+	}
 	/*reading the output diffusion matrix*/
-	/*enqueuing reading buffer*/	
-	if(!clEnqueueReadBuffer(command_queue,buffer,CL_TRUE,0,MATRIX_SIZE*sizeof(cl_float),matrix,0,NULL,NULL)) {
+	/*enqueuing reading buffer, implicit waiting thanks to CL_TRUE*/	
+	if(clEnqueueReadBuffer(command_queue,buffer,CL_TRUE,0,MATRIX_SIZE*sizeof(float),matrix,0,NULL,NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the read buffer\n");
 		exit(-1);
 	}
 
-	/*it will wait until there are still some commands in the queue*/
-	if(!clFinish(command_queue)) {
-		fprintf(stderr,"error in finishing the command queue\n");
-		exit(-1);	
-	}
 
 
-#if DEBUG 
+#if DEBUG
+	printf("%d %d size\n",h,w);	
 	for(int i=0;i<h;i++) {
 		for(int j=0;i<w;j++) {
-			fprintf(stdout,"%d ",matrix[i][j]);
+			fprintf(stdout,"%.2f ",matrix[i][j]);
 
 		}
 		fprintf(stdout,"\n");
@@ -304,17 +306,76 @@ exit(-1);
 	}
 
 #endif
-	//TODO
+	avg=0;
 	/*instantiate kernel for computing the average ( also arguments ) */
 	kernel_avg=clCreateKernel(program,"compute_average",&error);
 	if(error!=CL_SUCCESS){
 		fprintf(stderr,"cannot build kernel for average calculation\n");
 		exit(-1);
 	}
+	buffer_out  = clCreateBuffer(context, CL_MEM_READ_WRITE,
+			sizeof(float) , NULL, &error);
+	if(error!=CL_SUCCESS) {
+		fprintf(stderr,"error creating buffer\n");
+		exit(-1);
+	}
+
+
+	/*enqueuing writing buffers*/
+	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
+				0, MATRIX_SIZE*sizeof(float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enqueuing the write buffer\n");
+		exit(-1);
+
+	}
+	if(clEnqueueWriteBuffer(command_queue,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enquieung write buffer for avg\n");
+		exit(-1);
+	}
+	/*setting arguments*/
+
+	error=clSetKernelArg(kernel_avg, 0, sizeof(cl_mem), &buffer);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting first argument of avg kernel\n");
+		exit(-1);
+	}
+
+	error=clSetKernelArg(kernel_avg,1,sizeof(int),&h);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting second argument of avg kernel\n");
+		exit(-1);
+	}
+	error=clSetKernelArg(kernel_avg,2,sizeof(int),&w);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting third argument of avg kernel\n");
+		exit(-1);
+	}
+	error=clSetKernelArg(kernel_avg,3,sizeof(cl_mem),&buffer_out);
+	if(error!=CL_SUCCESS){
+		fprintf(stderr,"error setting the fourth argument of avg kernel\n");
+		exit(-1);
+	}
+	/*executing kernel*/
+	clEnqueueNDRangeKernel(command_queue, kernel_avg, 2, 
+			NULL, (const size_t *)&global, NULL, 0, NULL, NULL);
+
+	/*it will wait until there are still some commands in the queue*/
+	if(clFinish(command_queue)!=CL_SUCCESS) {
+		fprintf(stderr,"error in finishing the command queue\n");
+		exit(-1);	
+	}
 
 	/*print average temperature*/
-	avg=0;
+	if(clEnqueueReadBuffer(command_queu,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enqueuing the read buffer for avg\n");
+		exit(-1);
+	}
+
+	fprintf(stdout,"Average temperature: %.2f\n",avg);
+
+
 #if DEBUG
+	avg=0;
 	for(int i=1;i<h-1;i++) {
 		for(int j=1;j<w-1;j++) {
 			avg+=matrix[i][j];	
@@ -322,31 +383,80 @@ exit(-1);
 
 	}
 	avg/=(h*w);
+	fprintf(stdout,"Average temperature: %.2f\n",avg);
+
 #endif
 
-	fprintf(stdout,"Average temperature: %f\n",avg);
-	//TODO
+
 	/* instantiate kernel for computing the matrix absolute difference of each temperature with the average ( also args ) */
 	kernel_matrix_abs_val=clCreateKernel(program,"compute_matrix_abs_val",&error);
 	if(error!=CL_SUCCESS) {
 		fprintf(stderr,"cannot build kernle for computing absolute values\n");
 		exit(-1);
 	}
+	/*copying in the device memory*/
+	/*enqueuing writing buffers*/
+	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
+				0, MATRIX_SIZE*sizeof(float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enqueuing the write buffer foor abs matrix\n");
+		exit(-1);
 
+	}
+	if(clEnqueueWriteBuffer(command_queue,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enquieung write buffer for abs matrix\n");
+		exit(-1);
+	}
+	/*setting arguments*/
 
+	error=clSetKernelArg(kernel_matrix_abs_val, 0, sizeof(cl_mem), &buffer);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting first argument of abs matrix kernel\n");
+		exit(-1);
+	}
 
+	error=clSetKernelArg(kernel_matrix_abs_val,1,sizeof(int),&h);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting second argument of abs matrix kernel\n");
+		exit(-1);
+	}
+	error=clSetKernelArg(kernel_matrix_abs_val,2,sizeof(int),&w);
+	if(error!=CL_SUCCESS)	{
+		fprintf(stderr,"error setting third argument of abs matrix kernel\n");
+		exit(-1);
+	}
+	error=clSetKernelArg(kernel_matrix_abs_val,3,sizeof(cl_mem),&buffer_out);
+	if(error!=CL_SUCCESS){
+		fprintf(stderr,"error setting the fourth argument ofabs matrix kernel\n");
+		exit(-1);
+	}
+	/*executing kernel*/
+	clEnqueueNDRangeKernel(command_queue, kernel_matrix_abs_val, 2, 
+			NULL, (const size_t *)&global, NULL, 0, NULL, NULL);
+
+	/*it will wait until there are still some commands in the queue*/
+	if(clFinish(command_queue)!=CL_SUCCESS) {
+		fprintf(stderr,"error in finishing the command queue\n");
+		exit(-1);	
+	}
+
+	if(clEnqueueReadBuffer(command_queu,buffer,CL_TRUE,0,sizeof(float)*MATRIX_SIZE,matrix,0,NULL,NULL)!=CL_SUCCESS) {
+		fprintf(stderr,"error enqueuing the read buffer for abs matrix\n");
+		exit(-1);
+	}
 
 	/*print absolute difference between entries of matrix and average tmp*/
-#if DEBUG 
+
 	for(int i=1;i<h-1;i++) {
 		for(int j=1;j<w-1;j++) {
+#if DEBUG
 			fprintf(stdout,"%f ",abs(matrix[i][j]-avg));
+#endif
 		}
 		fprintf(stdout,"\n");
 
 
 	}
-#endif
+
 
 
 
@@ -355,6 +465,7 @@ exit(-1);
 
 
 	clReleaseMemObject(buffer);
+	clReleaseMemObject(buffer_out);
 	clReleaseProgram(program);
 	clReleaseKernel(kernel_diffusion);
 	clReleaseKernel(kernel_avg);
