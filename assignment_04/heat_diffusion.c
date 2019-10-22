@@ -98,7 +98,7 @@ int main (int argc , char ** argv )
 	}
 #else
        /*calloc allows us to obtain a  clean matrix ( zeros) also with boundaries*/	
-matrix=(float *) calloc(sizeof(float) * h*w);
+matrix=(float *) calloc(h*w,sizeof(float));
 if(matrix==NULL) {
 fprintf(stderr,"eerror allocatin the matrix\n");
 exit(-1);
@@ -120,7 +120,7 @@ while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
 #ifndef ARRAY_MATRIX
 			fprintf(stdout,"%.3f ",matrix[i][j]);
 #else
-			fprintf(stdout,"%.3 ",matrix[ i*w +j]);
+			fprintf(stdout,"%.3f ",matrix[ i*w +j]);
 #endif
 		}
 		fprintf(stdout,"\n");
@@ -627,10 +627,11 @@ while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
 	clReleaseKernel(kernel_matrix_abs_val);
 	clReleaseCommandQueue(command_queue);
 	clReleaseContext(context);
-
+#ifndef ARRAY_MATRIX 
 	for(int i=0;i<h;i++) {
 		free(matrix[i]);
 	}
+#endif
 	free(matrix);
 	free(partial_sum);
 	return 0;
