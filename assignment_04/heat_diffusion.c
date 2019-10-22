@@ -140,7 +140,7 @@ int main (int argc , char ** argv )
 	cl_kernel kernel_diffusion,kernel_avg,kernel_matrix_abs_val;
 	cl_device_id device_id;
 	cl_uint nmb_devices;
-	cl_mem buffer;
+	cl_mem buffer,buffer_out;
 
 	/*platform*/
 	if (clGetPlatformIDs(1, &platform_id, &nmb_platforms) != CL_SUCCESS) {
@@ -366,7 +366,7 @@ int main (int argc , char ** argv )
 	}
 
 	/*print average temperature*/
-	if(clEnqueueReadBuffer(command_queu,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
+	if(clEnqueueReadBuffer(command_queue,buffer_out,CL_TRUE,0,sizeof(float),&avg,0,NULL,NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the read buffer for avg\n");
 		exit(-1);
 	}
@@ -439,7 +439,7 @@ int main (int argc , char ** argv )
 		exit(-1);	
 	}
 
-	if(clEnqueueReadBuffer(command_queu,buffer,CL_TRUE,0,sizeof(float)*MATRIX_SIZE,matrix,0,NULL,NULL)!=CL_SUCCESS) {
+	if(clEnqueueReadBuffer(command_queue,buffer,CL_TRUE,0,sizeof(float)*MATRIX_SIZE,matrix,0,NULL,NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the read buffer for abs matrix\n");
 		exit(-1);
 	}

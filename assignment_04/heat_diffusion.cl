@@ -19,6 +19,8 @@ float h=data[ix*columns + jy];
 
 
 //printf("%d %d %f %f %f %f %f\n",ix,jy,hl,hr,ha,hb,h);
+
+float local_t=h+diff_c*(ha+hb+hl+hr/4*h);
 data[ix*columns+jy]=local_t;
 
 }
@@ -30,7 +32,7 @@ __kernel void compute_average(__global float * data, const int rows, const int c
 
 }
 
-__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,const float * average ) {
+__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,__global const float * average ) {
 
 
 }
