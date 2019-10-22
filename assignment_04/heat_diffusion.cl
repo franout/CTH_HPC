@@ -9,8 +9,9 @@ get_local_id() uniquely identifies each work item in a work group
 
 */
 
-const int ix = get_global_id(0)/rows +1;
-const int jy= get_global_id(0)/columns +1;
+const int offset= get_global_id(0) + columns +1 + 2 * (get_global_id(0) / (columns - 2));
+const int ix = offset/rows ;
+const int jy= offset%rows;
 
 float hl=data[ix*columns + jy-1] ; //h(i,j-1)
 float hr=data[ix*columns+jy+1] ;  // h(i,j+1)
@@ -19,7 +20,6 @@ float hb=data[(ix+1)*columns+jy] ; // h(i+1,j)
 float h=data[ix*columns + jy];
 
 
-//printf("%d %d %d %d %f %f %f %f %f\n",get_global_size(0),get_local_size(0),ix,jy,hl,hr,ha,hb,h);
 
 float local_t=h+diff_c*(ha+hb+hl+hr/4*h);
 data[ix*columns+jy]=local_t;
