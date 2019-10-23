@@ -8,33 +8,33 @@ get_globa_id uniquely identifies ech work item executing the kernel
 get_local_id() uniquely identifies each work item in a work group
 
 */
-//TODO 	check again
-const int offset= get_global_id(0) + columns +1 ;
+const int offset=  get_global_id(0) + (columns + 1) + 2 * (get_global_id(0) / (columns- 2))  ;
 const int ix = offset/rows ;
 const int jy= offset%rows;
-
-float hl=data[ix*columns + jy-1] ; //h(i,j-1)
-float hr=data[ix*columns+jy+1] ;  // h(i,j+1)
-float ha= data[(ix-1)*columns+jy]; //h(i-1,j)
-float hb=data[(ix+1)*columns+jy] ; // h(i+1,j)
-float h=data[ix*columns + jy];
-
+float hl=data[(curr_step%2)*columns*rows+ix*columns + jy-1] ; //h(i,j-1)
+float hr=data[(curr_step%2)*columns*rows+ix*columns+jy+1] ;  // h(i,j+1)
+float ha= data[(curr_step % 2 ) *columns * rows +(ix-1)*columns+jy]; //h(i-1,j)
+float hb=data[(curr_step% 2 ) *columns * rows +(ix+1)*columns+jy] ; // h(i+1,j)
+float h=data[((curr_step) % 2) * columns * rows +ix*columns + jy];
 
 
-float local_t=h+diff_c*(ha+hb+hl+hr/4-h);
-data[ix*columns+jy]=local_t;
+
+float local_t=h+diff_c*((ha+hb+hl+hr)/4-h);
+
+//TODO WRONG formula
+data[((curr_step + 1) % 2) * columns * rows +ix*columns+jy]=local_t;
 
 }
 
 
-__kernel void compute_average(__global float * data, const int rows, const int columns ,__global float * scratch,__global float * avg) {
+__kernel void compute_average(__global float * data, const int columns ,__global float * scratch,__global float * avg) {
 
 int gsz = get_global_size(0);
 int gix = get_global_id(0);
 int lsz = get_local_size(0);
 int lix = get_local_id(0);
 float acc = 0;
-for(int cix=gix; cix< rows*columns;cix+=gix) 
+for(int cix=gix; cix< columns;cix+=gix) 
 	{
 	acc += data[cix];
 	}

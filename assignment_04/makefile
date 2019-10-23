@@ -9,7 +9,7 @@ all: heat_diffusion
 heat_diffusion: heat_diffusion.c
 	$(CC) $(CFLAGS) $(OPT) -o heat_diffusion heat_diffusion.c $(OCL)
 execute: heat_diffusion
-	./heat_diffusion -d 0.33 -n 2
+	./heat_diffusion -d 0.033 -n 2
 clean:
 	rm -f *.out heat_diffusion
 
