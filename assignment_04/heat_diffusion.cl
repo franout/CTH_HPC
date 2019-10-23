@@ -29,47 +29,41 @@ data[((curr_step + 1) % 2) * columns * rows +ix*columns+jy]=local_t;
 __kernel void compute_average(__global float * data, const int columns ,__global float * scratch,__global float * avg) {
 
 int gsz = get_global_size(0);
-int gix = get_global_id(0);
+int gix = get_global_id(0)+(columns+1)+2*(get_global_id(0)/(columns-2));
 int lsz = get_local_size(0);
 int lix = get_local_id(0);
 
-printf("%d \n",gsz,gix,lsz,lix);
-//TODO add a check to the size of gix
-if(gix>= columns ) {
-return;
-}
-float acc = 0;
-for(int cix=gix; cix<columns;cix+=gix) 
-	{
-	acc += data[cix];
-	
-	}
-	scratch[lix] = acc;
-	for(int offset = lsz/2; offset>0; offset/=2) {
+printf("%f %d \n",data[gix],lix);
+printf("%d %d %d %d %d\n",gsz,gix,lsz,lix,lsz/2);
+scratch[lix] = data[gix];
+;
+//TODO PROBLEM
+for(int offset = lsz/2; offset>0; offset/=2) {
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-		if (lix < offset)  {
-		scratch[lix] += scratch[lix+offset];
-		}
-			}
-		if (lix == 0) {
-		avg[get_group_id(0)/lsz] = scratch[0];
-		}
+	if (lix < offset)  {
+	scratch[lix] += scratch[lix+offset];
+	}
+	}
+	printf("%f %f %f\n",scratch[0],scratch[lix],lix);
+	if (lix == 0) {
+	printf("%d \n",scratch [0]);
+	avg[gsz/lsz] = scratch[0];
+	}
+
+	}
+
+	__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,const float  avg ) {
 
 
-				}
-
-		__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,const float  avg ) {
-
-
-const int offset=  get_global_id(0) + (columns + 1) + 2 * (get_global_id(0) / (columns- 2))  ;
-const int ix = offset/rows ;
-const int jy= offset%rows;
+	const int offset=  get_global_id(0) + (columns + 1) + 2 * (get_global_id(0) / (columns- 2))  ;
+	const int ix = offset/rows ;
+	const int jy= offset%rows;
 
 
-		float old_data= data [ix*columns + jy] ;
+	float old_data= data [ix*columns + jy] ;
 
-		data [ix*columns + jy] = fabs(old_data - avg);
+	data [ix*columns + jy] = fabs(old_data - avg);
 
 
-		}		 
+	}		 

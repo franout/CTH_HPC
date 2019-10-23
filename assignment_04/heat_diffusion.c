@@ -369,8 +369,8 @@ int main (int argc , char ** argv )
 			nmb_groups = MATRIX_SIZE / local_size;
 		}
 	}else {
-		local_size=MATRIX_SIZE;
-		nmb_groups=1;
+		local_size=1;
+		nmb_groups=MATRIX_SIZE;
 	}
 
 #if DEBUG 
@@ -400,7 +400,7 @@ int main (int argc , char ** argv )
 
 	/*enqueuing writing buffers*/
 	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
-				0, MATRIX_SIZE*sizeof(cl_float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
+				0, 2*MATRIX_SIZE*sizeof(cl_float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the write buffer\n");
 		exit(-1);
 
@@ -449,6 +449,7 @@ int main (int argc , char ** argv )
 	avg=0;
 	for (size_t ix=0; ix < nmb_groups; ++ix){
 		avg += partial_sums[ix];
+
 	}
 	avg/=(MATRIX_SIZE_N_PAD-2);
 	fprintf(stdout,"Average temperature: %.2f\n",avg);
@@ -552,7 +553,7 @@ avg=111080;
 
 	/*enqueuing writing buffers*/
 	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
-				0, MATRIX_SIZE*sizeof(cl_float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
+				0, 2*MATRIX_SIZE*sizeof(cl_float) , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the write buffer\n");
 		exit(-1);
 
