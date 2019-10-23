@@ -8,8 +8,8 @@ get_globa_id uniquely identifies ech work item executing the kernel
 get_local_id() uniquely identifies each work item in a work group
 
 */
-
-const int offset= get_global_id(0) + columns +1 + 2 * (get_global_id(0) / (columns - 2));
+//TODO 	check again
+const int offset= get_global_id(0) + columns +1 ;
 const int ix = offset/rows ;
 const int jy= offset%rows;
 
@@ -21,7 +21,7 @@ float h=data[ix*columns + jy];
 
 
 
-float local_t=h+diff_c*(ha+hb+hl+hr/4*h);
+float local_t=h+diff_c*(ha+hb+hl+hr/4-h);
 data[ix*columns+jy]=local_t;
 
 }
