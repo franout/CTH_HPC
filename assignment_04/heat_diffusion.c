@@ -370,7 +370,7 @@ int main (int argc , char ** argv )
 		}
 	}else {
 		local_size=MATRIX_SIZE;
-		nmb_groups=MATRIX_SIZE;
+		nmb_groups=1;
 	}
 
 #if DEBUG 
@@ -435,12 +435,12 @@ int main (int argc , char ** argv )
 	/*print average temperature*/
 	/*it will wait until there are still some commands in the queue*/
 	if(clFinish(command_queue)!=CL_SUCCESS) {
-		fprintf(stderr,"error in finishing the command queue for average\n");
+		fprintf(stderr,"error in finishing the command queue for average 1\n");
 		exit(-1);	
 	}
 
 	error=clEnqueueReadBuffer(command_queue, buffer_out, CL_TRUE,
-			0, nmb_groups*sizeof(float), partial_sums, 0, NULL, NULL);
+			0, nmb_groups*sizeof(cl_float), partial_sums, 0, NULL, NULL);
 	if(error!=CL_SUCCESS) {
 		fprintf(stderr,"error reading in kernel average the partial sums results \n");
 		exit(-1);	

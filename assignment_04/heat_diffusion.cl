@@ -32,22 +32,31 @@ int gsz = get_global_size(0);
 int gix = get_global_id(0);
 int lsz = get_local_size(0);
 int lix = get_local_id(0);
+
+printf("%d \n",gsz,gix,lsz,lix);
+//TODO add a check to the size of gix
+if(gix>= columns ) {
+return;
+}
 float acc = 0;
-for(int cix=gix; cix< columns;cix+=gix) 
+for(int cix=gix; cix<columns;cix+=gix) 
 	{
 	acc += data[cix];
+	
 	}
 	scratch[lix] = acc;
-	barrier(CLK_LOCAL_MEM_FENCE);
 	for(int offset = lsz/2; offset>0; offset/=2) {
+	barrier(CLK_LOCAL_MEM_FENCE);
+
 		if (lix < offset)  {
 		scratch[lix] += scratch[lix+offset];
 		}
-		barrier(CLK_LOCAL_MEM_FENCE);
-		}
+			}
 		if (lix == 0) {
-		avg[get_group_id(0)] = scratch[0];
+		avg[get_group_id(0)/lsz] = scratch[0];
 		}
+
+
 				}
 
 		__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,const float  avg ) {
