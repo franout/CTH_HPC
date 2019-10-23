@@ -21,7 +21,6 @@ float h=data[((curr_step) % 2) * columns * rows +ix*columns + jy];
 
 float local_t=h+diff_c*((ha+hb+hl+hr)/4-h);
 
-//TODO WRONG formula
 data[((curr_step + 1) % 2) * columns * rows +ix*columns+jy]=local_t;
 
 }
@@ -49,16 +48,14 @@ for(int cix=gix; cix< columns;cix+=gix)
 		if (lix == 0) {
 		avg[get_group_id(0)] = scratch[0];
 		}
-		}
-
+				}
 
 		__kernel void compute_matrix_abs_val(__global  float * data, const int rows,const int columns,const float  avg ) {
 
 
-
-		const int ix = get_global_id(0)/rows +1;
-		const int jy= get_global_id(0)/columns +1;
-
+const int offset=  get_global_id(0) + (columns + 1) + 2 * (get_global_id(0) / (columns- 2))  ;
+const int ix = offset/rows ;
+const int jy= offset%rows;
 
 
 		float old_data= data [ix*columns + jy] ;
