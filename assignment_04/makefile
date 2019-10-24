@@ -9,7 +9,7 @@ all: heat_diffusion
 heat_diffusion: heat_diffusion.c
 	$(CC) $(CFLAGS) $(OPT) -o heat_diffusion heat_diffusion.c $(OCL)
 execute: heat_diffusion
-	./heat_diffusion -d 0.033 -n 2
+	./heat_diffusion -d 0.03333 -n 2
 clean:
 	rm -f *.out heat_diffusion
 
@@ -20,7 +20,7 @@ performance: heat_diffusion
 	#### Number of iterations 	100000 		1000 		200	     ######
 	#### Time in seconds 	 	1.65 		97.6 		1.4	     ######
 	###################################################################################
-	mv diffusion_100_100 ./diffusion
+	#there is a probles somewhere
 	hyperfine -r 10  './heat_diffusion -n100000 -d0.01'
 	mv diffusion ./diffusion_100_100
 	mv diffusion_10000_1000 ./diffusion

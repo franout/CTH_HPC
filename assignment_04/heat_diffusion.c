@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <math.h>
 #define CL_KERNEL_FILE "./heat_diffusion.cl"
-#define INPUT_FILE "./try.txt"
+#define INPUT_FILE "./diffusion"
 #define MAX_KERNEL_SIZE 31457280 // 30 Mbytes
 
 
