@@ -1,19 +1,18 @@
 CC = gcc
 CFLAGS =  -O2 -march=native
-OCL = 
+MPILIB =-I/usr/include/openmpi-x86_64 -pthread -L/usr/lib64/openmpi/lib -lmpi -pthread -Wl,-rpath -Wl,/usr/lib64/openmpi/lib  -Wl,--enable-new-dtags -L/usr/lib64/openmpi/lib -lmpi
 
 .PHONY: all clean test
 
 all: heat_diffusion
 
-heat_diffusion: heat_diffusion.c set_up
-	$(CC) $(CFLAGS) $(OPT) -o heat_diffusion heat_diffusion.c $(OCL)
-execute: heat_diffusion set_up
+heat_diffusion: heat_diffusion.c 
+	$(CC) $(CFLAGS) $(OPT) -o heat_diffusion heat_diffusion.c $(MPILIB)
+execute: heat_diffusion 
 	mpirun -n 1 ./heat_diffusion -d 0.03333 -n 2
 clean:
 	rm -f *.out heat_diffusion
-set_up:
-	module load mpi
+
 performance: heat_diffusion set_up
 	###########################################################################################################
 ######	Width * Height 	100 * 100 	100 * 100 	10000 * 10000 	10000 * 10000 	10000 * 10000 	100000 * 100 	100000 * 100 #######

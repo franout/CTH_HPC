@@ -1,24 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <math.h>
-#define CL_KERNEL_FILE "./heat_diffusion.cl"
-#define INPUT_FILE "./diffusion"
-#define MAX_KERNEL_SIZE 31457280 // 30 Mbytes
-
+#define INPUT_FILE "./try.txt"
+#include <mpi.h>
 
 #define ARRAY_MATRIX 1
 #define DEBUG 0
 
-
-/*open cl version 1.2*/
-#ifndef CL_TARGET_OPENCL_VERSION
-#define CL_TARGET_OPENCL_VERSION 120
-#endif
-
-
-#include <CL/cl.h>
-
+typedef enum {COMPUTE,AVG,DIFF_ABS,DONE_COMPUTATION}cmd_t; 
 
 
 int main (int argc , char ** argv ) 
@@ -35,8 +24,10 @@ int main (int argc , char ** argv )
 #endif
 	float val,avg;
 	FILE *fp;
-	char * opencl_program_src;
-	long int size_cl_program=0;
+
+	/*initialization */
+	MPI_Init(&argc, &argv);
+	cmd_t cmd;
 	/*it returns the parsed char and as third arg it requires the separation char for arguments*/
 	while ((option = getopt(argc,argv,"n:d:"))!=-1) {
 
@@ -57,81 +48,103 @@ int main (int argc , char ** argv )
 		}
 	}
 
-	avg=0;
-	fp=fopen(INPUT_FILE,"r");
-	if(fp==NULL) {
-		fprintf(stderr,"error openign the file \n");
-		exit(-1);	
-	}
-	/*saving input files*/
-	/*adding two additional rows and colums for avoididn to use control on the indexes*/
-	fscanf(fp,"%d %d\n",&h,&w);
-	size_t MATRIX_SIZE_N_PAD=h*w;
-	h+=2;
-	w+=2;
-#ifndef ARRAY_MATRIX
-	matrix=(float **) malloc ( sizeof(float  *) *h);
-	if(matrix==NULL) {
-		fprintf(stderr,"error allocating matrix\n");
-		exit(-1);
-	}
 
-	for(int i=0;i<h;i++) {
-		matrix[i]=(float *) malloc (sizeof(float) * (w));
-		if(matrix[i]==NULL)  {
-			fprintf(stderr,"errorr allocating row\n");
-			exit(-1);
+	int nmb_mpi_proc, mpi_rank;
+	MPI_Status status;
+	MPI_Comm_size(MPI_COMM_WORLD, &nmb_mpi_proc);
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 
-		}
-		/*obtaining a clean matrix and with boundaries at zero*/
-		for(int j=0;j<w;j++) {
-			matrix[i][j]=0;
-
-		}
-
-
-
-	}
-	/*populating matrix reading from file*/
-	while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
-		matrix[x+1][y+1]=val;
-
-	}
-#else
-	/*calloc allows us to obtain a  clean matrix ( zeros) also with boundaries*/	
-	matrix=(float *) calloc(h*w,sizeof(float));
-	if(matrix==NULL) {
-		fprintf(stderr,"eerror allocatin the matrix\n");
-		exit(-1);
-	}
-	while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
-		matrix [ (x+1)*w +(y+1) ]=val;
-	}
-
-
-#endif
-	fclose(fp);
-	if(fp==NULL) {
-		fprintf(stderr,"error closing the file\n");
-		exit(-1);
-	}
 #if DEBUG
-	for(int i=0;i<h;i++) {
-		for(int j=0;j<w;j++) {
-#ifndef ARRAY_MATRIX
-			fprintf(stdout,"%.3f ",matrix[i][j]);
-#else
-			fprintf(stdout,"%.3f ",matrix[ i*w +j]);
+	printf( "Number of processes: %d\n", nmb_mpi_proc );
 #endif
+	/*heat diffusion */
+	if (mpi_rank==0) {
+		/* master process */
+		/*read input data*/
+		fp=fopen(INPUT_FILE,"r");
+		if(fp==NULL) {
+			fprintf(stderr,"error openign the file \n");
+			exit(-1);	
 		}
-		fprintf(stdout,"\n");
-	}
+
+
+		/*saving input files*/
+		/*adding two additional rows and colums for avoididn to use control on the indexes*/
+		fscanf(fp,"%d %d\n",&h,&w);
+		size_t MATRIX_SIZE_N_PAD=h*w;
+		h+=2;
+		w+=2;
+#ifndef ARRAY_MATRIX
+		matrix=(float **) malloc ( sizeof(float  *) *h);
+		if(matrix==NULL) {
+			fprintf(stderr,"error allocating matrix\n");
+			exit(-1);
+		}
+
+		for(int i=0;i<h;i++) {
+			matrix[i]=(float *) malloc (sizeof(float) * (w));
+			if(matrix[i]==NULL)  {
+				fprintf(stderr,"errorr allocating row\n");
+				exit(-1);
+
+			}
+			/*obtaining a clean matrix and with boundaries at zero*/
+			for(int j=0;j<w;j++) {
+				matrix[i][j]=0;
+
+			}
+
+
+
+		}
+		/*populating matrix reading from file*/
+		while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
+			matrix[x+1][y+1]=val;
+
+		}
+#else
+		/*calloc allows us to obtain a  clean matrix ( zeros) also with boundaries*/	
+		matrix=(float *) calloc(h*w,sizeof(float));
+		if(matrix==NULL) {
+			fprintf(stderr,"eerror allocatin the matrix\n");
+			exit(-1);
+		}
+		while(fscanf(fp,"%d %d %f\n",&x,&y,&val)!=EOF) {
+			matrix [ (x+1)*w +(y+1) ]=val;
+		}
+
+
 #endif
+		fclose(fp);
+		if(fp==NULL) {
+			fprintf(stderr,"error closing the file\n");
+			exit(-1);
+		}
+#if DEBUG
+		for(int i=0;i<h;i++) {
+			for(int j=0;j<w;j++) {
+#ifndef ARRAY_MATRIX
+				fprintf(stdout,"%.3f ",matrix[i][j]);
+#else
+				fprintf(stdout,"%.3f ",matrix[ i*w +j]);
+#endif
+			}
+			fprintf(stdout,"\n");
+		}
+#endif
+		/*basic pattern send receiver*/
+		/*notify to workers that thye can proceed with the computation*/
 
-/* ????? */
+		for( size_t step=0;step<required_iterations;step++) {
+			cmd=COMPUTE;
+			MPI_Send(&cmd, 1, MPI_INT, 1, step, MPI_COMM_WORLD);
 
+			while ( cmd!=DONE_COMPUTATION) {
+			MPI_Recv(&cmd,1,MPI_INT,1,step,MPI_COMM_WORLD,&status);
+			}
 
-
+		}
+	
 #if DEBUG
 	printf("%d %d size\nComputed matrix",h,w);	
 	for(int i=1;i<h-1;i++) {
@@ -148,6 +161,72 @@ int main (int argc , char ** argv )
 	}
 
 #endif
+
+
+
+		/*compute average*/
+
+		/*compute abs diff */
+
+		/*compute average*/
+
+
+	}
+
+	else if (mpi_rank==1) {
+		/*workers */
+		int step_work=0;
+		while(1) {
+			MPI_Recv(&cmd, 1, MPI_INT,0 , step_work, MPI_COMM_WORLD, &status);
+
+			switch(cmd) {
+				case COMPUTE:
+
+					for(int ix=1;ix<h-1;ix++) {
+						for (int jy=1;jy<w-1;jy++) {
+							float hl=matrix[ix*w + jy-1] ; //h(i,j-1)
+							float hr=matrix[ix*w+jy+1] ;  // h(i,j+1)
+							float ha= matrix[(ix-1)*w+jy]; //h(i-1,j)
+							float hb=matrix[(ix+1)*w+jy] ; // h(i+1,j)
+									float h=matrix[ix*w + jy];
+
+
+
+									float local_t=h+diffusion_const*((ha+hb+hl+hr)/4-h);
+
+									matrix[ix*w+jy]=local_t;
+
+
+									}
+
+
+									}
+									MPI_Send((cmd_t *)DONE_COMPUTATION,1,MPI_INT,0,step_work,MPI_COMM_WORLD);		
+									step_work++;
+
+									break;
+									case AVG:
+									break;
+									case DIFF_ABS:
+
+									break;
+
+									default:
+									fprintf(stderr,"unrecognized command\n");
+									exit(-1);
+
+
+
+			}
+		}
+	}
+
+
+	/*finishing */ 
+
+	MPI_Finalize();
+
+	avg=0;
 
 
 
@@ -236,7 +315,6 @@ int main (int argc , char ** argv )
 	}
 #endif
 	free(matrix);
-	free(partial_sums);
 	return 0;
 }
 
