@@ -8,7 +8,7 @@
 
 
 #define ARRAY_MATRIX 1
-#define DEBUG 1
+#define DEBUG 0
 
 
 /*open cl version 1.2*/
@@ -358,19 +358,14 @@ int main (int argc , char ** argv )
 	size_t nmb_groups =0;
 
 
-	if(MATRIX_SIZE > local_size ) {
-		while(MATRIX_SIZE%local_size!=0 ){
-			local_size=local_size>>1; // dividing by two
-		}
-		if(MATRIX_SIZE % local_size !=0) {
-			fprintf(stderr,"error matrix size still not  a multiple of local size\n");
-			exit(-1);
-		}else {
-			nmb_groups = MATRIX_SIZE / local_size;
-		}
+	while(MATRIX_SIZE%local_size!=0 ){
+		local_size=local_size>>1; // dividing by two
+	}
+	if(MATRIX_SIZE % local_size !=0) {
+		fprintf(stderr,"error matrix size still not  a multiple of local size\n");
+		exit(-1);
 	}else {
-		local_size=1;
-		nmb_groups=MATRIX_SIZE;
+		nmb_groups = MATRIX_SIZE/local_size;
 	}
 
 #if DEBUG 
@@ -451,7 +446,7 @@ int main (int argc , char ** argv )
 		avg += partial_sums[ix];
 
 	}
-	avg/=(MATRIX_SIZE_N_PAD-2);
+	avg/=(MATRIX_SIZE_N_PAD);
 	fprintf(stdout,"Average temperature: %.2f\n",avg);
 
 
@@ -522,7 +517,7 @@ int main (int argc , char ** argv )
 
 
 #if DEBUG
-avg=111080;
+	avg=111080;
 	for(int i=1;i<h-1;i++) {
 		for(int j=1;j<w-1;j++) {
 #ifndef ARRAY_MATRIX
@@ -629,7 +624,7 @@ avg=111080;
 
 	}
 	avg/=(MATRIX_SIZE_N_PAD);
-	fprintf(stdout,"Average temperature of absolute value: %.2f\n",avg);
+	fprintf(stdout,"Average temperature of absolute value(debug): %.2f\n",avg);
 
 #endif
 

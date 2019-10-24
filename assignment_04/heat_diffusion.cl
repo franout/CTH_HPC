@@ -26,29 +26,22 @@ data[((curr_step + 1) % 2) * columns * rows +ix*columns+jy]=local_t;
 }
 
 
-__kernel void compute_average(__global float * data, const int columns ,__global float * scratch,__global float * avg) {
+__kernel void compute_average(__global float * data, const int columns ,__local float * scratch,__global float * avg) {
 
 int gsz = get_global_size(0);
 int gix = get_global_id(0)+(columns+1)+2*(get_global_id(0)/(columns-2));
 int lsz = get_local_size(0);
 int lix = get_local_id(0);
-
-printf("%f %d \n",data[gix],lix);
-printf("%d %d %d %d %d\n",gsz,gix,lsz,lix,lsz/2);
 scratch[lix] = data[gix];
-;
-//TODO PROBLEM
-for(int offset = lsz/2; offset>0; offset/=2) {
-	barrier(CLK_LOCAL_MEM_FENCE);
 
+for(int offset = lsz>>1; offset>0; offset>>=1) {
+	barrier(CLK_LOCAL_MEM_FENCE);
 	if (lix < offset)  {
 	scratch[lix] += scratch[lix+offset];
 	}
 	}
-	printf("%f %f %f\n",scratch[0],scratch[lix],lix);
 	if (lix == 0) {
-	printf("%d \n",scratch [0]);
-	avg[gsz/lsz] = scratch[0];
+	avg[get_group_id(0)] = scratch[0];
 	}
 
 	}
