@@ -4,7 +4,7 @@
 #include <math.h>
 #define CL_KERNEL_FILE "./heat_diffusion.cl"
 #define INPUT_FILE "./diffusion"
-#define MAX_KERNEL_SIZE 31457280 // 30 Mbytes
+#define MAX_KERNEL_SIZE 1048576 // 1 Kbytes
 #define ARRAY_MATRIX 1
 #define DEBUG 0
 
@@ -244,10 +244,9 @@ int main (int argc , char ** argv )
 	}
 	/*memory reserved as buffers*/
 	const size_t MATRIX_SIZE = w*h; // plus the two additional row and column
-
 	/*doubling the data structure on the device in order to prevent data blocking between work groups*/
 	buffer  = clCreateBuffer(context, CL_MEM_READ_WRITE,
-			sizeof(cl_float) * MATRIX_SIZE*2, NULL, &error);
+			sizeof(float) * MATRIX_SIZE*2, NULL, &error);
 	if(error!=CL_SUCCESS) {
 		fprintf(stderr,"error creating buffer\n");
 		exit(-1);
@@ -255,9 +254,10 @@ int main (int argc , char ** argv )
 
 	/*three last arguments are used for synchronization ( events ) */
 	/*enqueuing writing buffers*/
-	if(clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
-				0, MATRIX_SIZE*sizeof(cl_float)*2 , matrix, 0, NULL, NULL)!=CL_SUCCESS) {
-		fprintf(stderr,"error enqueuing the write buffer\n");
+
+	if((error=clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
+				0, MATRIX_SIZE*sizeof(float)*2 , matrix, 0, NULL, NULL))!=CL_SUCCESS) {
+		fprintf(stderr,"%d error enqueuing the write buffer\n",error);
 		exit(-1);
 
 	}
@@ -301,6 +301,7 @@ int main (int argc , char ** argv )
 #if DEBUG 
 	printf("getting local size %d\n",local_size);	
 #endif
+
 	/*executing the required iterations*/
 	for(size_t step=0;step<required_iterations ;step++) {
 
@@ -328,7 +329,7 @@ int main (int argc , char ** argv )
 	}
 	/*reading the output diffusion matrix*/
 	/*enqueuing reading buffer, implicit waiting thanks to CL_TRUE*/	
-	if(clEnqueueReadBuffer(command_queue,buffer,CL_TRUE,0,MATRIX_SIZE*sizeof(cl_float),matrix,0,NULL,NULL)!=CL_SUCCESS) {
+	if(clEnqueueReadBuffer(command_queue,buffer,CL_TRUE,0,MATRIX_SIZE*sizeof(float),matrix,0,NULL,NULL)!=CL_SUCCESS) {
 		fprintf(stderr,"error enqueuing the read buffer\n");
 		exit(-1);
 	}
