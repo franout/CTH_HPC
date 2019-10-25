@@ -97,7 +97,7 @@ int main (int argc , char ** argv )
 	}
 #else
 	/*calloc allows us to obtain a  clean matrix ( zeros) also with boundaries*/	
-	matrix=(float *) calloc(h*w,sizeof(float));
+	matrix=(float *) calloc(h*w*2,sizeof(float));
 	if(matrix==NULL) {
 		fprintf(stderr,"eerror allocatin the matrix\n");
 		exit(-1);
@@ -254,14 +254,14 @@ int main (int argc , char ** argv )
 
 	/*three last arguments are used for synchronization ( events ) */
 	/*enqueuing writing buffers*/
-
+printf("before \n");
 	if((error=clEnqueueWriteBuffer(command_queue, buffer, CL_TRUE,
 				0, MATRIX_SIZE*sizeof(float)*2 , matrix, 0, NULL, NULL))!=CL_SUCCESS) {
 		fprintf(stderr,"%d error enqueuing the write buffer\n",error);
 		exit(-1);
 
 	}
-
+printf("here\n");
 	/*
 	 * ATTENTION: real index of matrix goes from 1 to n-1
 	 */
