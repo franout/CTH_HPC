@@ -5,8 +5,6 @@
 #define CL_KERNEL_FILE "./heat_diffusion.cl"
 #define INPUT_FILE "./diffusion"
 #define MAX_KERNEL_SIZE 31457280 // 30 Mbytes
-
-
 #define ARRAY_MATRIX 1
 #define DEBUG 0
 
