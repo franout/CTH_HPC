@@ -41,8 +41,6 @@ int main (int argc , char ** argv ) {
 
 	//#pragma omp declare reduction (int_occ : int  : map.occ[omp_in]++ )
 
-
-
 	tmps=(char *) calloc(ROW_L+1,sizeof(char));
 	if(work_string==NULL || tmps==NULL) {
 		fprintf(stderr,"error allocating strings\n");
@@ -50,87 +48,77 @@ int main (int argc , char ** argv ) {
 	}
 	fp=fopen(INPUT_FILE,"r");
 	if(fp==NULL ) {
-		fprintf(stderr,"errror opening the file\n");
-		exit(-1);
+	  fprintf(stderr,"errror opening the file\n");
+	  exit(-1);
 	}
 	n=3465+1; // fp *100 -> max reacheable value of distance, with fixed input format
 	occ=(int *) calloc(n,sizeof(int));
 
-
 	points=0;
 	while(fread(tmps,sizeof(char),ROW_L,fp)>0){
-		points++;
+	  points++;
 	}
 
 	fseek(fp,0,SEEK_SET);
 	point=(float ** ) malloc(sizeof(float *) * points);
 	if(point==NULL ) {
-		fprintf(stderr,"error allocating distances\n");
-		exit(-1);
-
+	  fprintf(stderr,"error allocating distances\n");
+	  exit(-1);
 	}
 
 	int i=0;
 	while((read_char =fread(work_string,sizeof(char),BUFFER_SIZE,fp))>0&&  i<points){
-		for(int k=0;k<=read_char-ROW_L;k+=ROW_L) {
-			point[i]=(float *) malloc(sizeof(float) *3);
-			memcpy(tmps,work_string+k,ROW_L);
-			sscanf(tmps,"%f %f %f\n",&point[i][0],&point[i][1],&point[i][2]);
-			i++;
-		}
-
-
+	  for(int k=0;k<=read_char-ROW_L;k+=ROW_L) {
+	    point[i]=(float *) malloc(sizeof(float) *3);
+	    memcpy(tmps,work_string+k,ROW_L);
+	    sscanf(tmps,"%f %f %f\n",&point[i][0],&point[i][1],&point[i][2]);
+	    i++;
+	  }
 	}
 	free(work_string);
 	if(N_THREAD>1){
 #pragma omp parallel for shared (points,point) private (dist) schedule(static,60) reduction(+:occ[:n])
-		for(int i=0;i<points-1;i++) {
-			for(int j=i+1;j<points;j++) {
-				dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
-				//		printf("%d\n",dist);
-				occ[dist]++;				
-			}
-
-		}
+	  for(int i=0;i<points-1;i++) {
+	    for(int j=i+1;j<points;j++) {
+	      dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
+	      //		printf("%d\n",dist);
+	      occ[dist]++;
+	    }
+	  }
 	}else {
-		for(int i=0;i<points-1;i++) {
-			for(int j=i+1;j<points/3;j++) {
-				dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
+	  for(int i=0;i<points-1;i++) {
+	    for(int j=i+1;j<points/3;j++) {
+	      dist=roundf(100*sqrtf( (point[i][0]-point[j][0])*(point[i][0]-point[j][0])+(point[i][1]-point[j][1])*(point[i][1]-point[j][1]) + (point[i][2]-point[j][2])*(point[i][2]-point[j][2])  ));
 
-				occ[dist]++;				
-				dist=roundf(100*sqrtf( (point[i][0]-point[j+1][0])*(point[i][0]-point[j+1][0])+(point[i][1]-point[j+1][1])*(point[i][1]-point[j+1][1]) + (point[i][2]-point[j+1][2])*(point[i][2]-point[j+1][2])  ));
+	      occ[dist]++;
+	      dist=roundf(100*sqrtf( (point[i][0]-point[j+1][0])*(point[i][0]-point[j+1][0])+(point[i][1]-point[j+1][1])*(point[i][1]-point[j+1][1]) + (point[i][2]-point[j+1][2])*(point[i][2]-point[j+1][2])  ));
 
-				occ[dist]++;				
-				dist=roundf(100*sqrtf( (point[i][0]-point[j+2][0])*(point[i][0]-point[j+2][0])+(point[i][1]-point[j+2][1])*(point[i][1]-point[j+2][1]) + (point[i][2]-point[j+2][2])*(point[i][2]-point[j+2][2])  ));
-			}
-		}
+	      occ[dist]++;
+	      dist=roundf(100*sqrtf( (point[i][0]-point[j+2][0])*(point[i][0]-point[j+2][0])+(point[i][1]-point[j+2][1])*(point[i][1]-point[j+2][1]) + (point[i][2]-point[j+2][2])*(point[i][2]-point[j+2][2])  ));
+	    }
+	  }
 	}
 	for(int i=0;i<n;i++) {
-		if(i<1000) {
-			fprintf(stdout,"0%.2f %d\n",((float)(i))/100,occ[i]);
+	  if(i<1000) {
+	    fprintf(stdout,"0%.2f %d\n",((float)(i))/100,occ[i]);
 
-		}else {
-			fprintf(stdout,"%.2f %d\n",((float)(i))/100,occ[i]);
-
-		}
-
+	  }else {
+	    fprintf(stdout,"%.2f %d\n",((float)(i))/100,occ[i]);
+	  }  
 	}
 
 /*free memory*/
 	for(int i=0;i<points;i++) {
-	free(point[i]);
-	
+	  free(point[i]);	
 	}
 	free(point);
-
 	free(occ);
 	free(tmps);
 	fclose(fp);
 	if(fp==NULL ) {
-		fprintf(stderr,"error closing the file\n");
-		exit(-1);
+	  fprintf(stderr,"error closing the file\n");
+	  exit(-1);
 	}
-
 	return 0;
 }
 
